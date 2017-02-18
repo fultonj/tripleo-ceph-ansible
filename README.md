@@ -10,7 +10,7 @@ The following first goal of the project has been accomplished:
 - Deploy overcloud nodes [without OpenStack services](https://github.com/fultonj/oooq/commit/2e2635f8cae347013737a89341b2cca24b68c28c)
 - Use Mistral to trigger Ceph-Ansible to install Ceph on the Overcloud nodes without OpenStack services
 
-To see how it looks when run see [session1.txt](https://github.com/fultonj/mistral/blob/master/mistral-ceph-ansible/session1.txt).
+To see how it looks when run see [session1.txt](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/session1.txt).
 
 Why? 
 ----
@@ -44,17 +44,17 @@ Goal1 How?
 
 - Set up TripleO-quickstart undercloud (works-for-me via [master.sh](https://github.com/fultonj/oooq/blob/master/master.sh))
 - Deploy juice-boxes (works-for-me via [deploy-jeos.sh](https://github.com/fultonj/oooq/blob/master/deploy-jeos.sh))
-- Run [mistral-ceph-ansible.sh](https://github.com/fultonj/mistral/blob/master/mistral-ceph-ansible/mistral-ceph-ansible.sh) which executes the workflow [mistral-ceph-ansible.yaml](https://github.com/fultonj/mistral/blob/master/mistral-ceph-ansible/mistral-ceph-ansible.yaml)
+- Run [mistral-ceph-ansible.sh](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/mistral-ceph-ansible.sh) which executes the workflow [mistral-ceph-ansible.yaml](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/mistral-ceph-ansible.yaml)
 
 I have verified that the above works in my virtual environment. The
-run takes less than 30 minutes. An example is in [session1.txt](https://github.com/fultonj/mistral/blob/master/mistral-ceph-ansible/session1.txt).
+run takes less than 30 minutes. An example is in [session1.txt](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/session1.txt).
 
 ### Goal1.5
 
 Deploy HCI OpenStack/Ceph where Mistral installed Ceph
 
 - Use [deploy-mistral-ceph-hci.sh](https://github.com/fultonj/oooq/blob/master/deploy-mistral-ceph-hci.sh) to deploy OpenStack to use an external Ceph cluster (which it will self-host)
-- If the playbook is configured to [use br-ex instead of eth0](https://github.com/fultonj/mistral/commit/e8b225911bca755e606d323ca108fbc161c38206), then the [same mistral workflow](https://github.com/fultonj/mistral/blob/master/mistral-ceph-ansible/mistral-ceph-ansible.sh) will install Ceph on the same hosts.
-- Then you just need to [restart nova, cinder, and glance](https://github.com/fultonj/mistral/blob/master/mistral-ceph-ansible/connect_osp_ceph.sh) to have those services use Ceph and you can do a [sanity-check.sh](https://github.com/fultonj/mistral/blob/master/mistral-ceph-ansible/sanity-check.sh).
+- If the playbook is configured to [use br-ex instead of eth0](https://github.com/fultonj/tripleo-ceph-ansible/commit/e8b225911bca755e606d323ca108fbc161c38206), then the [same mistral workflow](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/mistral-ceph-ansible.sh) will install Ceph on the same hosts.
+- Then you just need to [restart nova, cinder, and glance](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/connect_osp_ceph.sh) to have those services use Ceph and you can do a [sanity-check.sh](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/sanity-check.sh).
 
 
