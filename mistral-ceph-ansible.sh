@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 # Filename:                mistral-ceph-ansible.sh
 # Description:             prep and run ceph-ansible
-# Time-stamp:              <2017-02-12 17:10:44 jfulton> 
+# Time-stamp:              <2017-02-20 17:12:29 jfulton> 
 # -------------------------------------------------------
 PREP=1
 RUN=1
 WORKFLOW='mistral-ceph-ansible'
+
+#OPTION='jeos'
+#OPTION='hci'
+OPTION='jeos-docker'
+#OPTION='hci-docker'
 # -------------------------------------------------------
 if [ $PREP -eq 1 ]; then
     
@@ -14,7 +19,9 @@ if [ $PREP -eq 1 ]; then
 
     echo "Zapping Disks"
     bash zap.sh
-    
+
+    # If we do this for real, then do we ship an RPM of ceph-ansible?
+    # It's already shipped for RHCS2 downstream
     if [ ! -d ceph-ansible ]; then
 	echo "ceph-ansible is missing please run init.sh"
 	exit 1
@@ -25,9 +32,53 @@ if [ $PREP -eq 1 ]; then
     fi
     cp -r ceph-ansible /tmp/
     cp /tmp/ceph-ansible/site.yml.sample /tmp/ceph-ansible/site.yml
-    # cp /tmp/ceph-ansible/group_vars/mons.yml.sample /tmp/ceph-ansible/group_vars/mons.yml
-    # copy in all.yml and osds.yml
-    cp group_vars/* /tmp/ceph-ansible/group_vars/
+    
+    # all of this nonsense will be-replaced when this workflow is parametized
+    if [ $OPTION == 'jeos' ]; then
+	# need to set mon-interface to eth0
+	cp /tmp/ceph-ansible/group_vars/mons.yml.sample /tmp/ceph-ansible/group_vars/mons.yml
+	cp group_vars/native-all.yml /tmp/ceph-ansible/group_vars/all.yml
+	cp group_vars/osds.yml /tmp/ceph-ansible/group_vars/osds.yml
+    fi
+    if [ $OPTION == 'hci' ]; then
+	# need to set mon-interface to br-ex
+	cp group_vars/native-all.yml /tmp/ceph-ansible/group_vars/all.yml
+	cp group_vars/osds.yml /tmp/ceph-ansible/group_vars/osds.yml
+	cp group_vars/mons.yml /tmp/ceph-ansible/group_vars/mons.yml
+    fi
+    if [ $OPTION == 'jeos-docker' ]; then
+	# need to set mon-interface to eth0
+	cp group_vars/docker-all.yml /tmp/ceph-ansible/group_vars/all.yml
+
+	# There is an open bug for containerized ceph requring me to update
+	#   ceph-ansible/roles/ceph-mon/tasks/docker/pre_requisite.yml
+	# 
+	# to comment out the following task: 
+	# # ensure extras enabled for docker
+	# - name: enable extras on centos
+	#   yum_repository:
+	#     name: extras
+	#     state: present
+	#     enabled: yes
+	#   when:
+	#     - ansible_distribution == 'CentOS'
+	#   tags:
+	#     with_pkg
+	# workaround:
+	cp ceph-ansible/roles/ceph-mon/tasks/docker/pre_requisite.yml /tmp/ceph-ansible/roles/ceph-mon/tasks/docker/pre_requisite.yml
+	
+    fi
+    if [ $OPTION == 'hci-docker' ]; then
+	echo "waiting for fix to https://github.com/ceph/ceph-ansible/issues/1321"
+	# Items in group_vars/docker-all.yml that don't work with docker are commented out
+	# https://github.com/ceph/ceph-ansible/issues/1321
+	#cp group_vars/docker-all.yml /tmp/ceph-ansible/group_vars/all.yml
+    fi
+    
+    
+    #cp group_vars/* /tmp/ceph-ansible/group_vars/
+    #rm /tmp/ceph-ansible/group_vars/*-all.yml # don't copy in special exceptions
+
     sudo chown -R mistral:mistral /tmp/ceph-ansible/
 fi
 # -------------------------------------------------------

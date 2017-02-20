@@ -5,9 +5,9 @@ if [ ! -d /home/stack/oooq ]; then
     echo "git clone https://github.com/fultonj/oooq.git /home/stack/oooq"
 fi
 
-if [ ! -d /home/stack/mistral/mistral-ceph-ansible ]; then
-    echo "/home/stack/mistral/mistral-ceph-ansible is missing please install with:"
-    echo "git clone https://github.com/fultonj/mistral.git /home/stack/mistral"
+if [ ! -d /home/stack/tripleo-ceph-ansible ]; then
+    echo "/home/stack/tripleo-ceph-ansible is missing please install with:"
+    echo "git clone https://github.com/fultonj/tripleo-ceph-ansible.git /home/stack/tripleo-ceph-ansible"
 fi
 
 echo "Install OpenStack"
@@ -18,7 +18,7 @@ popd
 
 echo "Install Ceph with Mistral/ceph-ansible"
 date
-pushd /home/stack/mistral/mistral-ceph-ansible
+pushd /home/stack/tripleo-ceph-ansible
 bash mistral-ceph-ansible.sh
 echo "Restart OpenStack services which use Ceph"
 date

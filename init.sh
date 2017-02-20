@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-FORK=1
+FORK=0
 HACK=0
-CLONE=0
+CLONE=1
 
 if [ $FORK -eq 1 ]; then
     # (OLD) use fork given https://github.com/d0ugal/mistral-ansible-actions/pull/1
