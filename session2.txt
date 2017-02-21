@@ -1,0 +1,15 @@
+Example of running ceph in containers with mistral-ceph-ansible.sh with jeos-docker:
+
+[stack@undercloud ~]$ ansible all -b -m shell -a "docker ps"
+192.168.24.17 | SUCCESS | rc=0 >>
+CONTAINER ID        IMAGE                                                   COMMAND             CREATED             STATUS              PORTS               NAMES
+230445ba9fc8        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    2 minutes ago       Up 2 minutes                            overcloud-jeos-mon-0
+
+192.168.24.12 | SUCCESS | rc=0 >>
+CONTAINER ID        IMAGE                                                   COMMAND             CREATED             STATUS              PORTS               NAMES
+39eca35ae637        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    2 minutes ago       Up 2 minutes                            overcloud-jeos-osd-0-osd-devvde
+25731da97d1f        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    2 minutes ago       Up 2 minutes                            overcloud-jeos-osd-0-osd-devvdc
+039cd72045c3        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    2 minutes ago       Up 2 minutes                            overcloud-jeos-osd-0-osd-devvdd
+59df66f19fde        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    2 minutes ago       Up 2 minutes                            overcloud-jeos-osd-0-osd-devvdb
+
+[stack@undercloud ~]$ 
