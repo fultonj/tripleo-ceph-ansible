@@ -12,13 +12,16 @@ The following first goal of the project has been accomplished:
 
 To see how it looks when run see [session1.txt](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/session1.txt).
 
+It's also possible to use the same process to deplopy ceph in containers sess [session2.txt](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/session2.txt).
+
+
 Why? 
 ----
 
 Suppose I then do the following in subsequent goals: 
 
 - [Use OS::Mistral::WorflowExecution](https://review.openstack.org/#/c/267770) to start the workflow so all I need to do is `openstack overcloud deploy ...` (Goal2)
-- Use [ceph-ansible docker](https://github.com/ceph/ceph-ansible/tree/master/roles/ceph-docker-common) to deploy Ceph in containers
+- Use [ceph-ansible docker](https://github.com/ceph/ceph-ansible/tree/master/roles/ceph-docker-common) to deploy Ceph in containers [ [done](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/session2.txt) ].
 - Use [Containerized Compute](https://access.redhat.com/documentation/en/red-hat-openstack-platform/10/single/advanced-overcloud-customization/#sect-Configuring_Containerized_Compute_Nodes)
 - Use [External Ceph](https://access.redhat.com/documentation/en/red-hat-openstack-platform/10/single/red-hat-ceph-storage-for-the-overcloud#integration) to make the overcloud talk to the CephCluster stood up on overcloud nodes without OpenStack services.
 
