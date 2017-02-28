@@ -12,7 +12,7 @@ The following first goal of the project has been accomplished:
 
 To see how it looks when run see [session1.txt](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/session1.txt).
 
-It's also possible to use the same process to deplopy ceph in containers sess [session2.txt](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/session2.txt).
+It's also possible to use the same process to deplopy ceph in containers see [session2.txt](https://github.com/fultonj/tripleo-ceph-ansible/blob/master/session2.txt).
 
 
 Why? 
