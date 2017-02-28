@@ -44,7 +44,6 @@ if [ $RPM -eq 1 ]; then
     # https://shaman.ceph.com/repos/ceph-ansible/master/
     # https://shaman.ceph.com/api/repos/ceph-ansible/master/latest/centos/7/repo?arch=noarch
     pushd /etc/yum.repos.d
-
     curl https://2.chacra.ceph.com/repos/ceph-ansible/master/661a9d0cdf35eb7d4b40ae25eaf4e8caa0e2dd18/centos/7/flavors/default/repo > ceph.repo
     popd
     yum -y install ceph-ansible 
