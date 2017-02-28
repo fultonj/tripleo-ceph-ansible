@@ -3,6 +3,7 @@
 FORK=0
 HACK=0
 CLONE=1
+RPM=0
 
 if [ $FORK -eq 1 ]; then
     # (OLD) use fork given https://github.com/d0ugal/mistral-ansible-actions/pull/1
@@ -36,4 +37,15 @@ fi
 
 if [ $CLONE -eq 1 ]; then
     git clone git@github.com:ceph/ceph-ansible.git
+fi
+
+if [ $RPM -eq 1 ]; then
+    # The latest ceph-ansible CI RPM builds are listed at
+    # https://shaman.ceph.com/repos/ceph-ansible/master/
+    # https://shaman.ceph.com/api/repos/ceph-ansible/master/latest/centos/7/repo?arch=noarch
+    pushd /etc/yum.repos.d
+
+    curl https://2.chacra.ceph.com/repos/ceph-ansible/master/661a9d0cdf35eb7d4b40ae25eaf4e8caa0e2dd18/centos/7/flavors/default/repo > ceph.repo
+    popd
+    yum -y install ceph-ansible 
 fi
