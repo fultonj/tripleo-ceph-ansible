@@ -89,8 +89,6 @@ dummy:
 devices:
    - /dev/vdb
    - /dev/vdc
-   - /dev/vdd
-   - /dev/vde
 
 #devices: []
 
@@ -144,10 +142,8 @@ journal_collocation: false
 
 raw_multi_journal: true
 raw_journal_devices:
-   - /dev/vdf  
-   - /dev/vdf
-   - /dev/vdf
-   - /dev/vdf     
+   - /dev/vdd 
+   - /dev/vdd
 
 # III. Use directory instead of disk for OSDs
 # Use 'true' to enable this scenario
