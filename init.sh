@@ -33,6 +33,10 @@ if [ $HACK -eq 1 ]; then
     sudo chown mistral:mistral /home/mistral/
     sudo cp -r ~/.ssh/ /home/mistral/
     sudo chown -R mistral:mistral /home/mistral/.ssh/
+
+    # disable host key checking
+    # https://github.com/openstack/tripleo-validations/blob/master/ansible.cfg#L3
+    sudo sed -i -e s/\#host_key_checking\ =\ False/host_key_checking=False/g /etc/ansible/ansible.cfg
 fi
 
 if [ $CLONE -eq 1 ]; then
