@@ -3,18 +3,6 @@ version: '2.0'
 
 mistral-ceph-ansible:
   tasks:
-    resolv_conf:
-      action: ansible
-      input:
-        hosts: 'all'
-        module: copy
-        module_args: 'src=/etc/resolv.conf dest=/etc/resolv.conf'
-        remote_user: heat-admin
-        become: true
-        become_user: root
-      publish:
-        output: <% task(resolv_conf).result %>
-      on-success: ceph_install
     ceph_install:
       action: ansible-playbook
       input:
@@ -22,6 +10,7 @@ mistral-ceph-ansible:
         remote_user: heat-admin
         become: true
         become_user: root
+        extra_vars: host_key_checking=False
       publish:
         output: <% task(ceph_install).result %>
         
