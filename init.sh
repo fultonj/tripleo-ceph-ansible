@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-FORK=0
+FORK=1
 HACK=0
-CLONE=1
+CLONE=0
 RPM=0
 
 if [ $FORK -eq 1 ]; then
-    # (OLD) use fork given https://github.com/d0ugal/mistral-ansible-actions/pull/1
-    git clone -b extra_vars_args_to_limit https://github.com/fultonj/mistral-ansible-actions.git
+    # pull from my work isntead of pip
+    git clone https://github.com/fultonj/mistral-ansible-actions.git
     sudo rm -Rf /usr/lib/python2.7/site-packages/mistral_ansible*
     pushd mistral-ansible-actions
     sudo python setup.py install
