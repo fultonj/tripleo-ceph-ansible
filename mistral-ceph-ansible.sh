@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Filename:                mistral-ceph-ansible.sh
 # Description:             prep and run ceph-ansible
-# Time-stamp:              <2017-02-20 17:12:29 jfulton> 
+# Time-stamp:              <2017-03-02 21:02:06 jfulton> 
 # -------------------------------------------------------
 PREP=1
 RUN=1
@@ -14,8 +14,8 @@ OPTION='jeos-docker'
 # -------------------------------------------------------
 if [ $PREP -eq 1 ]; then
     
-    echo "Updating inventory"
-    bash ansible-inventory.sh
+    #echo "Updating inventory"
+    #bash ansible-inventory.sh
 
     echo "Zapping Disks"
     bash zap.sh
