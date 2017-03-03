@@ -273,7 +273,7 @@ ip_version: ipv4
 
 ## OSD options
 #
-journal_size: 5120 # OSD journal size in MB
+journal_size: 256 # OSD journal size in MB
 public_network: 192.168.24.0/24
 cluster_network: "{{ public_network }}"
 #osd_mkfs_type: xfs
@@ -382,8 +382,10 @@ ceph_conf_overrides:
   global:
     pool_default_pg_num: 128
     pool_default_pgp_num: 128
-    pool_default_size: 1
-    pool_default_min_size: 1
+    osd_pool_default_size: 1
+    osd_pool_default_min_size: 1
+    osd_crush_chooseleaf_type: 0
+  
 
 #############
 # OS TUNING #
