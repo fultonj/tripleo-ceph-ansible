@@ -3,6 +3,30 @@ version: '2.0'
 
 mistral-ceph-ansible:
   tasks:
+    mon_firewall: # this needs to be done in heat/puppet instead
+      action: ansible
+      input:
+        hosts: 'mons'
+        module: iptables
+        module_args: 'chain=INPUT protocol=tcp destination_port=6789 jump=ACCEPT'
+        remote_user: heat-admin
+        become: true
+        become_user: root
+      publish:
+        output: <% task(mon_firewall).result %>
+      on-success: osd_firewall
+    osd_firewall: # this needs to be done in heat/puppet instead
+      action: ansible
+      input:
+        hosts: 'osds'
+        module: iptables
+        module_args: 'chain=INPUT protocol=tcp destination_port=6800:7300 jump=ACCEPT'
+        remote_user: heat-admin
+        become: true
+        become_user: root
+      publish:
+        output: <% task(osd_firewall).result %>
+      on-success: ceph_install    
     ceph_install:
       action: ansible-playbook
       input:
@@ -10,7 +34,7 @@ mistral-ceph-ansible:
         remote_user: heat-admin
         become: true
         become_user: root
-        extra_vars: host_key_checking=False
+        # extra_vars: '{"host_key_checking":False, "check_firewall":True}'
       publish:
         output: <% task(ceph_install).result %>
         
