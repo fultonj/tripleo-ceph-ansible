@@ -34,7 +34,8 @@ mistral-ceph-ansible:
         remote_user: heat-admin
         become: true
         become_user: root
+        # skip_tags: package-install
         # extra_vars: '{"host_key_checking":False, "check_firewall":True}'
       publish:
         output: <% task(ceph_install).result %>
-        
+    # need to create ceph keys here
