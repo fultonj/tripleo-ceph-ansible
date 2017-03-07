@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Filename:                mistral-ceph-ansible.sh
 # Description:             prep and run ceph-ansible
-# Time-stamp:              <2017-03-07 16:15:55 jfulton> 
+# Time-stamp:              <2017-03-07 23:06:49 jfulton> 
 # -------------------------------------------------------
 PRE_PREP=0
 PREP=1
@@ -50,6 +50,7 @@ if [ $PREP -eq 1 ]; then
     fi
     if [ $OPTION == 'jeos-docker' ]; then
 	# need to set mon-interface to eth0
+	# mons.yml is not used in this scenario
 	cp group_vars/docker-all.yml /tmp/ceph-ansible/group_vars/all.yml
 
 	# There is an open bug for containerized ceph requring me to update
