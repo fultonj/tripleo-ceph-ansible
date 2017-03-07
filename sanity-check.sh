@@ -4,7 +4,7 @@ OVERALL=1
 CINDER=0
 GLANCE=0
 
-source ~/overcloudrc
+source ~/oooq/overcloudrc
 if [ $OVERALL -eq 1 ]; then   
     echo " --------- ceph df --------- "
     ansible mons -b -m shell -a "ceph df"
