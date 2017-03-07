@@ -36,8 +36,6 @@ ceph_osd_docker_devices: "{{ devices }}"
 devices:
    - /dev/vdb
    - /dev/vdc
-   - /dev/vdd
-   - /dev/vde
 
 # ---------------------------------------------
 # ceph_conf_overrides:

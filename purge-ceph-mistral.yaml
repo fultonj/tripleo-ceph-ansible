@@ -10,6 +10,6 @@ purge-ceph-mistral:
         remote_user: heat-admin
         become: true
         become_user: root
-        extra_vars: ireallymeanit=yes
+        extra_vars: '{"ireallymeanit":"yes", "host_key_checking":False}'
       publish:
         output: <% task(ceph_purge).result %>

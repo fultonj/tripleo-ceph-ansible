@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
 # Filename:                mistral-ceph-ansible.sh
 # Description:             prep and run ceph-ansible
-# Time-stamp:              <2017-02-20 17:12:29 jfulton> 
+# Time-stamp:              <2017-03-03 14:33:39 jfulton> 
 # -------------------------------------------------------
 PREP=1
 RUN=1
 WORKFLOW='mistral-ceph-ansible'
 
 #OPTION='jeos'
-#OPTION='hci'
-OPTION='jeos-docker'
+OPTION='hci'
+#OPTION='jeos-docker'
 #OPTION='hci-docker'
 # -------------------------------------------------------
 if [ $PREP -eq 1 ]; then
     
-    echo "Updating inventory"
-    bash ansible-inventory.sh
+    #echo "Updating inventory"
+    #bash ansible-inventory.sh
 
-    echo "Zapping Disks"
-    bash zap.sh
+    #echo "Zapping Disks"
+    #bash zap.sh
 
     # If we do this for real, then do we ship an RPM of ceph-ansible?
     # It's already shipped for RHCS2 downstream

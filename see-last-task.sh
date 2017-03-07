@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+source ~/stackrc
 TASK_ID=$(cat TASK_ID)
 mistral task-list | tail -2 | head -1
 #mistral task-get $TASK_ID
