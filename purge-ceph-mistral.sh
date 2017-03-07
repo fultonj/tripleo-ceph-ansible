@@ -1,17 +1,17 @@
 #!/usr/bin/env bash
 # Filename:                mistral-ceph-ansible.sh
 # Description:             prep and run ceph-ansible
-# Time-stamp:              <2017-02-07 13:47:59 jfulton> 
+# Time-stamp:              <2017-03-07 23:14:52 jfulton> 
 # -------------------------------------------------------
 RUN=1
 WORKFLOW='purge-ceph-mistral'
 # -------------------------------------------------------
-if [ ! -f /tmp/ceph-ansible/purge-cluster.yml ]; then
+if [[ ! -f /tmp/ceph-ansible/purge-cluster.yml ]]; then
   # workaround since this playbook expects files in parent directory
   sudo ln -s /tmp/ceph-ansible/infrastructure-playbooks/purge-cluster.yml /tmp/ceph-ansible/
 fi
 
-if [ $RUN -eq 1 ]; then
+if [[ $RUN -eq 1 ]]; then
     source ~/stackrc
     EXISTS=$(mistral workflow-list | grep $WORKFLOW | wc -l)
     if [[ $EXISTS -gt 0 ]]; then

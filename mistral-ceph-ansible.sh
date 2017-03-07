@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Filename:                mistral-ceph-ansible.sh
 # Description:             prep and run ceph-ansible
-# Time-stamp:              <2017-03-07 23:06:49 jfulton> 
+# Time-stamp:              <2017-03-07 23:13:33 jfulton> 
 # -------------------------------------------------------
 PRE_PREP=0
 PREP=1
@@ -13,7 +13,7 @@ OPTION='hci'
 #OPTION='jeos-docker'
 #OPTION='hci-docker'
 # -------------------------------------------------------
-if [ $PRE_PREP -eq 1 ]; then
+if [[ $PRE_PREP -eq 1 ]]; then
     echo "Updating inventory"
     bash ansible-inventory.sh
 
@@ -21,34 +21,34 @@ if [ $PRE_PREP -eq 1 ]; then
     bash zap.sh
 fi
 # -------------------------------------------------------
-if [ $PREP -eq 1 ]; then
+if [[ $PREP -eq 1 ]]; then
     # If we do this for real, then do we ship an RPM of ceph-ansible?
     # It's already shipped for RHCS2 downstream
-    if [ ! -d ceph-ansible ]; then
+    if [[ ! -d ceph-ansible ]]; then
 	echo "ceph-ansible is missing please run init.sh"
 	exit 1
     fi
     
-    if [ -d /tmp/ceph-ansible ]; then
+    if [[ -d /tmp/ceph-ansible ]]; then
 	sudo rm -rf /tmp/ceph-ansible
     fi
     cp -r ceph-ansible /tmp/
     cp /tmp/ceph-ansible/site.yml.sample /tmp/ceph-ansible/site.yml
     
     # all of this nonsense will be-replaced when this workflow is parametized
-    if [ $OPTION == 'jeos' ]; then
+    if [[ $OPTION == 'jeos' ]]; then
 	# need to set mon-interface to eth0
 	cp /tmp/ceph-ansible/group_vars/mons.yml.sample /tmp/ceph-ansible/group_vars/mons.yml
 	cp group_vars/native-all.yml /tmp/ceph-ansible/group_vars/all.yml
 	cp group_vars/osds.yml /tmp/ceph-ansible/group_vars/osds.yml
     fi
-    if [ $OPTION == 'hci' ]; then
+    if [[ $OPTION == 'hci' ]]; then
 	# need to set mon-interface to br-ex
 	cp group_vars/native-all.yml /tmp/ceph-ansible/group_vars/all.yml
 	cp group_vars/osds.yml /tmp/ceph-ansible/group_vars/osds.yml
 	cp group_vars/mons.yml /tmp/ceph-ansible/group_vars/mons.yml
     fi
-    if [ $OPTION == 'jeos-docker' ]; then
+    if [[ $OPTION == 'jeos-docker' ]]; then
 	# need to set mon-interface to eth0
 	# mons.yml is not used in this scenario
 	cp group_vars/docker-all.yml /tmp/ceph-ansible/group_vars/all.yml
@@ -71,7 +71,7 @@ if [ $PREP -eq 1 ]; then
 	cp ceph-ansible/roles/ceph-mon/tasks/docker/pre_requisite.yml /tmp/ceph-ansible/roles/ceph-mon/tasks/docker/pre_requisite.yml
 	
     fi
-    if [ $OPTION == 'hci-docker' ]; then
+    if [[ $OPTION == 'hci-docker' ]]; then
 	echo "waiting for fix to https://github.com/ceph/ceph-ansible/issues/1321"
 	# Items in group_vars/docker-all.yml that don't work with docker are commented out
 	# https://github.com/ceph/ceph-ansible/issues/1321
@@ -85,7 +85,7 @@ if [ $PREP -eq 1 ]; then
     sudo chown -R mistral:mistral /tmp/ceph-ansible/
 fi
 # -------------------------------------------------------
-if [ $RUN -eq 1 ]; then
+if [[ $RUN -eq 1 ]]; then
     source ~/stackrc
     EXISTS=$(mistral workflow-list | grep $WORKFLOW | wc -l)
     if [[ $EXISTS -gt 0 ]]; then
