@@ -5,6 +5,7 @@ HACK=0
 CLONE=0
 RPM=0
 
+source ~/stackrc
 if [ $FORK -eq 1 ]; then
     # pull from my work isntead of pip
     git clone https://github.com/fultonj/mistral-ansible-actions.git
