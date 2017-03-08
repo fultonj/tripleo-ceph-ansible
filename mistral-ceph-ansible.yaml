@@ -2,6 +2,9 @@
 version: '2.0'
 
 mistral-ceph-ansible:
+  type: direct
+  input:
+    - monitor_interface
   tasks:
     mon_firewall: # this needs to be done in heat/puppet instead
       action: ansible
@@ -26,7 +29,10 @@ mistral-ceph-ansible:
         become_user: root
       publish:
         output: <% task(osd_firewall).result %>
-      on-success: ceph_install    
+      on-success: print_args
+    print_args:
+      action: std.echo output=<% $.monitor_interface %>
+      on-success: ceph_install
     ceph_install:
       action: ansible-playbook
       input:
@@ -35,7 +41,6 @@ mistral-ceph-ansible:
         become: true
         become_user: root
         # skip_tags: package-install
-        # extra_vars: '{"host_key_checking":False, "check_firewall":True}'
+        extra_vars: '{"monitor_interface":"<% $.monitor_interface %>"}'
       publish:
         output: <% task(ceph_install).result %>
-    # need to create ceph keys here

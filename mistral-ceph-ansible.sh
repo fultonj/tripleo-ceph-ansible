@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Filename:                mistral-ceph-ansible.sh
 # Description:             prep and run ceph-ansible
-# Time-stamp:              <2017-03-07 23:13:33 jfulton> 
+# Time-stamp:              <2017-03-08 00:39:16 jfulton> 
 # -------------------------------------------------------
 PRE_PREP=0
 PREP=1
@@ -77,8 +77,6 @@ if [[ $PREP -eq 1 ]]; then
 	# https://github.com/ceph/ceph-ansible/issues/1321
 	#cp group_vars/docker-all.yml /tmp/ceph-ansible/group_vars/all.yml
     fi
-    
-    
     #cp group_vars/* /tmp/ceph-ansible/group_vars/
     #rm /tmp/ceph-ansible/group_vars/*-all.yml # don't copy in special exceptions
 
@@ -86,6 +84,10 @@ if [[ $PREP -eq 1 ]]; then
 fi
 # -------------------------------------------------------
 if [[ $RUN -eq 1 ]]; then
+    if [[ ! -f input.json ]]; then
+	echo "Error: input.json is not in `pwd`"
+	exit 1
+    fi
     source ~/stackrc
     EXISTS=$(mistral workflow-list | grep $WORKFLOW | wc -l)
     if [[ $EXISTS -gt 0 ]]; then
@@ -93,7 +95,7 @@ if [[ $RUN -eq 1 ]]; then
     else
 	mistral workflow-create $WORKFLOW.yaml    
     fi
-    mistral execution-create $WORKFLOW
+    mistral execution-create $WORKFLOW input.json
     UUID=$(mistral execution-list | grep $WORKFLOW | awk {'print $2'} | tail -1)
     mistral execution-get $UUID
     echo "Getting output for the following tasks in workflow $WORKFLOW"
