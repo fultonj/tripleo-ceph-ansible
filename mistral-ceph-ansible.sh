@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Filename:                mistral-ceph-ansible.sh
 # Description:             prep and run ceph-ansible
-# Time-stamp:              <2017-03-08 00:39:16 jfulton> 
+# Time-stamp:              <2017-03-08 09:41:40 jfulton> 
 # -------------------------------------------------------
 PRE_PREP=0
 PREP=1
@@ -95,7 +95,7 @@ if [[ $RUN -eq 1 ]]; then
     else
 	mistral workflow-create $WORKFLOW.yaml    
     fi
-    mistral execution-create $WORKFLOW input.json
+    mistral execution-create $WORKFLOW ceph-ansible-input.json
     UUID=$(mistral execution-list | grep $WORKFLOW | awk {'print $2'} | tail -1)
     mistral execution-get $UUID
     echo "Getting output for the following tasks in workflow $WORKFLOW"
