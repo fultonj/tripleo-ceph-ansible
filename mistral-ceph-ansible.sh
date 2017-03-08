@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Filename:                mistral-ceph-ansible.sh
 # Description:             prep and run ceph-ansible
-# Time-stamp:              <2017-03-08 09:41:40 jfulton> 
+# Time-stamp:              <2017-03-08 17:19:56 jfulton> 
 # -------------------------------------------------------
 PRE_PREP=0
 PREP=1
+USE_PLAYBOOKS=0
 RUN=1
 WORKFLOW='mistral-ceph-ansible'
 
@@ -16,7 +17,6 @@ OPTION='hci'
 if [[ $PRE_PREP -eq 1 ]]; then
     echo "Updating inventory"
     bash ansible-inventory.sh
-
     echo "Zapping Disks"
     bash zap.sh
 fi
@@ -28,11 +28,14 @@ if [[ $PREP -eq 1 ]]; then
 	echo "ceph-ansible is missing please run init.sh"
 	exit 1
     fi
-    
     if [[ -d /tmp/ceph-ansible ]]; then
 	sudo rm -rf /tmp/ceph-ansible
     fi
     cp -r ceph-ansible /tmp/
+    sudo chown -R mistral:mistral /tmp/ceph-ansible/
+fi
+# -------------------------------------------------------
+if [[ $USE_PLAYBOOKS -eq 1 ]]; then
     cp /tmp/ceph-ansible/site.yml.sample /tmp/ceph-ansible/site.yml
     
     # all of this nonsense will be-replaced when this workflow is parametized
@@ -84,8 +87,8 @@ if [[ $PREP -eq 1 ]]; then
 fi
 # -------------------------------------------------------
 if [[ $RUN -eq 1 ]]; then
-    if [[ ! -f input.json ]]; then
-	echo "Error: input.json is not in `pwd`"
+    if [[ ! -f ceph-ansible-input.json ]]; then
+	echo "Error: ceph-ansible-input.json is not in `pwd`"
 	exit 1
     fi
     source ~/stackrc
