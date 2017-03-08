@@ -32,8 +32,21 @@ mistral-tendrl:
       on-success: print_args
     print_args:
       action: std.echo output=<% $.key %>
-      on-success: ceph_install
-    ceph_install:
-      action: std.echo output="Call Tendrl! "
+      on-success: user_tendrl
+    user_tendrl:   # this should tell me the username is taken
+      action: std.http
+      input:
+        method: POST        
+        url: 'http://192.168.24.253:9292/1.0/users'
+        headers:
+          Content-Type: application/json
+          Authorization: 'Bearer <% $.key %>'
+        body:
+          name: 'Tom Hardy'
+          username: 'thardy'
+          email: 'thardy@tendrl.org'
+          role: 'admin'
+          password: 'temp1234'
+          password_confirmation: 'temp1234'
       publish:
-        output: <% task(ceph_install).result %>
+        output: <% task(ping_tendrl).result %>
