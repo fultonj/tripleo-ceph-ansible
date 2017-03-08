@@ -49,4 +49,4 @@ mistral-tendrl:
           password: 'temp1234'
           password_confirmation: 'temp1234'
       publish:
-        output: <% task(ping_tendrl).result %>
+        output: <% task(user_tendrl).result %>
