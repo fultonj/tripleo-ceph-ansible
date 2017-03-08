@@ -4,7 +4,7 @@
     "public_network": "192.168.24.0/24",
     "cluster_network": "192.168.24.0/24",
     "ip_version": "ipv4",
-    "monitor_interface": "br-ex"
+    "monitor_interface": "br-ex",
     
     "ceph_stable_repo": "http://download.ceph.com/rpm-jewel",
     "ceph_stable_release": "jewel",
@@ -32,5 +32,5 @@
     "openstack_config": true,
     "openstack_keys": [
 	{"name": "client.openstack", "value": "mon 'allow r' osd 'allow class-read object_prefix rbd_children, allow rwx pool={{ openstack_cinder_pool }}, allow rwx pool={{ openstack_cinder_backup_pool }}, allow rwx pool={{ openstack_nova_pool }}, allow rwx pool={{ openstack_glance_pool }}, allow rwx pool={{ openstack_metrics_pool }}'"}
-    ],
+    ]
 }
