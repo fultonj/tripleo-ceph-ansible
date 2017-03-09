@@ -4,19 +4,15 @@ version: '2.0'
 mistral-ceph-ansible:
   type: direct
   input: # i generated this w/ python, will make extensible later
-    - handler_health_osd_check_retries
-    - handler_health_mon_check_delay
     - monitor_secret
-    - openstack_keys
-    - ceph_conf_overrides
-    - handler_health_osd_check
+    #- openstack_keys
+    #- ceph_conf_overrides
     - ip_version
+    - ceph_stable
     - ceph_stable_key
     - raw_journal_devices
-    - handler_health_osd_check_delay
     - fsid
     - ceph_stable_repo
-    - handler_health_mon_check_retries
     - openstack_config
     - devices
     - public_network
@@ -26,30 +22,30 @@ mistral-ceph-ansible:
     - raw_multi_journal
     - monitor_interface
   tasks:
-    mon_firewall: # this needs to be done in heat/puppet instead
-      action: ansible
-      input:
-        hosts: 'mons'
-        module: iptables
-        module_args: 'chain=INPUT protocol=tcp destination_port=6789 jump=ACCEPT'
-        remote_user: heat-admin
-        become: true
-        become_user: root
-      publish:
-        output: <% task(mon_firewall).result %>
-      on-success: osd_firewall
-    osd_firewall: # this needs to be done in heat/puppet instead
-      action: ansible
-      input:
-        hosts: 'osds'
-        module: iptables
-        module_args: 'chain=INPUT protocol=tcp destination_port=6800:7300 jump=ACCEPT'
-        remote_user: heat-admin
-        become: true
-        become_user: root
-      publish:
-        output: <% task(osd_firewall).result %>
-      on-success: print_args
+    # mon_firewall: # this needs to be done in heat/puppet instead
+    #   action: ansible
+    #   input:
+    #     hosts: 'mons'
+    #     module: iptables
+    #     module_args: 'chain=INPUT protocol=tcp destination_port=6789 jump=ACCEPT'
+    #     remote_user: heat-admin
+    #     become: true
+    #     become_user: root
+    #   publish:
+    #     output: <% task(mon_firewall).result %>
+    #   on-success: osd_firewall
+    # osd_firewall: # this needs to be done in heat/puppet instead
+    #   action: ansible
+    #   input:
+    #     hosts: 'osds'
+    #     module: iptables
+    #     module_args: 'chain=INPUT protocol=tcp destination_port=6800:7300 jump=ACCEPT'
+    #     remote_user: heat-admin
+    #     become: true
+    #     become_user: root
+    #   publish:
+    #     output: <% task(osd_firewall).result %>
+    #   on-success: print_args
     print_args:
       action: std.echo output=<% $.monitor_interface %>
       on-success: ceph_install
@@ -62,6 +58,6 @@ mistral-ceph-ansible:
         become_user: root
         # skip_tags: package-install
         # i generated this w/ python, will make extensible later
-        extra_vars: '{"handler_health_osd_check_retries":"<% $.handler_health_osd_check_retries %>", "handler_health_mon_check_delay":"<% $.handler_health_mon_check_delay %>", "monitor_secret":"<% $.monitor_secret %>", "openstack_keys":"<% $.openstack_keys %>", "ceph_conf_overrides":"<% $.ceph_conf_overrides %>", "handler_health_osd_check":"<% $.handler_health_osd_check %>", "ip_version":"<% $.ip_version %>", "ceph_stable_key":"<% $.ceph_stable_key %>", "raw_journal_devices":"<% $.raw_journal_devices %>", "handler_health_osd_check_delay":"<% $.handler_health_osd_check_delay %>", "fsid":"<% $.fsid %>", "ceph_stable_repo":"<% $.ceph_stable_repo %>", "handler_health_mon_check_retries":"<% $.handler_health_mon_check_retries %>", "openstack_config":"<% $.openstack_config %>", "devices":"<% $.devices %>", "public_network":"<% $.public_network %>", "ceph_stable_release":"<% $.ceph_stable_release %>", "journal_collocation":"<% $.journal_collocation %>", "cluster_network":"<% $.cluster_network %>", "raw_multi_journal":"<% $.raw_multi_journal %>", "monitor_interface":"<% $.monitor_interface %>"}'
+        extra_vars: '{"monitor_secret":"<% $.monitor_secret %>", "ip_version":"<% $.ip_version %>", "ceph_stable": <% $.ceph_stable %>, "ceph_stable_key":"<% $.ceph_stable_key %>", "raw_journal_devices":"<% $.raw_journal_devices %>", "fsid":"<% $.fsid %>", "ceph_stable_repo":"<% $.ceph_stable_repo %>", "openstack_config":"<% $.openstack_config %>", "devices":"<% $.devices %>", "public_network":"<% $.public_network %>", "ceph_stable_release":"<% $.ceph_stable_release %>", "journal_collocation": <% $.journal_collocation %>, "cluster_network":"<% $.cluster_network %>", "raw_multi_journal": <% $.raw_multi_journal %>, "monitor_interface":"<% $.monitor_interface %>"}'
       publish:
         output: <% task(ceph_install).result %>

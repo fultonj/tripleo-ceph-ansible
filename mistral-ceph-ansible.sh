@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Filename:                mistral-ceph-ansible.sh
 # Description:             prep and run ceph-ansible
-# Time-stamp:              <2017-03-08 17:19:56 jfulton> 
+# Time-stamp:              <2017-03-08 18:04:38 jfulton> 
 # -------------------------------------------------------
 PRE_PREP=0
 PREP=1
@@ -36,6 +36,7 @@ if [[ $PREP -eq 1 ]]; then
 fi
 # -------------------------------------------------------
 if [[ $USE_PLAYBOOKS -eq 1 ]]; then
+    # this will go soon as we're getting parametized
     cp /tmp/ceph-ansible/site.yml.sample /tmp/ceph-ansible/site.yml
     
     # all of this nonsense will be-replaced when this workflow is parametized
