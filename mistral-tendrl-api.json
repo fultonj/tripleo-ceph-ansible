@@ -1,0 +1,39 @@
+{
+    "sds_type": "ceph",
+    "sds_parameters": {
+    "name": "ceph",
+        "fsid": "140cd3d5-58e4-4935-a954-d946ceff371d",
+        "public_network": "192.168.24.0/24",
+        "cluster_network": "192.168.24.0/24",
+        "ceph_conf_overrides": {
+            "global": {
+                "osd_pool_default_pg_num": 128,
+                "pool_default_pgp_num": 128
+            }
+        }
+    },
+    "node_identifier": "ip",
+    "node_configuration": {
+        "192.168.24.18": {
+            "role": "ceph/mon",
+            "provisioning_ip": "192.168.24.18",
+            "monitor_interface": "br-ex"
+        },
+        "192.168.24.15": {
+            "role": "ceph/osd",
+            "provisioning_ip": "192.168.24.15",
+            "journal_size": 256,
+            "journal_colocation": "false",
+            "storage_disks": [
+                {
+                    "device": "/dev/vdb",
+                    "journal": "/dev/vdd"
+                },
+                {
+                    "dev_name": "/dev/vdc",
+                    "journal": "/dev/vdd"
+                }
+            ]
+        }
+    }
+}

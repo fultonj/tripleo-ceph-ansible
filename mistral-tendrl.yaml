@@ -50,3 +50,41 @@ mistral-tendrl:
           password_confirmation: 'temp1234'
       publish:
         output: <% task(user_tendrl).result %>
+        on-success: tendrl_create_cluster
+    tendrl_create_cluster: 
+      action: std.http
+      input:
+        method: POST        
+        url: 'http://192.168.24.253:9292/1.0/CreateCluster'
+        headers:
+          Content-Type: application/json
+          Authorization: 'Bearer <% $.key %>'
+        body:
+          node_configuration:
+            192.168.24.15:
+              journal_colocation: false
+              journal_size: 256
+              provisioning_ip: 192.168.24.15
+              role: ceph/osd
+              storage_disks:
+              - device: /dev/vdb
+                journal: /dev/vdd
+              - dev_name: /dev/vdc
+                journal: /dev/vdd
+            192.168.24.18:
+              monitor_interface: br-ex
+              provisioning_ip: 192.168.24.18
+              role: ceph/mon
+          node_identifier: ip
+          sds_parameters:
+            ceph_conf_overrides:
+              global:
+                osd_pool_default_pg_num: 128
+                pool_default_pgp_num: 128
+            cluster_network: 192.168.24.0/24
+            fsid: 140cd3d5-58e4-4935-a954-d946ceff371d
+            name: ceph
+            public_network: 192.168.24.0/24
+          sds_type: ceph
+      publish:
+        output: <% task(tendrl_create_cluster).result %>
