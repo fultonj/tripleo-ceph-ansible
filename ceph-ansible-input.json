@@ -13,6 +13,7 @@
 
     "journal_collocation": false,
     "raw_multi_journal": true,
+    "journal_size": 256,
     "devices": ["/dev/vdb", "/dev/vdc"],    
     "raw_journal_devices": ["/dev/vdd", "/dev/vdd"],
     
