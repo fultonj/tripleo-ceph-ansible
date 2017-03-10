@@ -4,7 +4,6 @@
     "public_network": "192.168.24.0/24",
     "cluster_network": "192.168.24.0/24",
     "ip_version": "ipv4",
-    "monitor_interface": "br-ex",
     
     "ceph_stable": true,
     "ceph_stable_repo": "http://download.ceph.com/rpm-jewel/",
@@ -17,5 +16,10 @@
     "devices": ["/dev/vdb", "/dev/vdc"],    
     "raw_journal_devices": ["/dev/vdd", "/dev/vdd"],
     
-    "openstack_config": true
+    "openstack_config": true,
+    "mons": "true",
+    "osds": "true",
+    "rgws": "true",
+    "mdss": "true",
+    "rbd-mirrors": "true"
 }
