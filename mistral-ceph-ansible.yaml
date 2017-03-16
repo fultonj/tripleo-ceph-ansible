@@ -62,7 +62,7 @@ mistral-ceph-ansible:
     ceph_install:
       action: ansible-playbook
       input:
-        playbook: /tmp/ceph-ansible/site.yml.sample
+        playbook: /usr/share/ceph-ansible/site.yml.sample
         remote_user: heat-admin
         become: true
         become_user: root
