@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-MISTRAL=0
+MISTRAL=1
 MISTRAL_FORK=0
 MISTRAL_PRIV=1
 
-CEPH_ANSIBLE=0
+CEPH_ANSIBLE=1
 CEPH_ANSIBLE_MASTER=0
 
-HEAT=0
+HEAT=1
 THT=1
 
 source ~/stackrc
@@ -92,7 +92,11 @@ if [ $THT -eq 1 ]; then
 	echo "No SSH agent with keys present. Will not be able to connect to git."
 	exit 1
     fi
+    echo "Patching ~/templates with unmerged changes from the following:"
+    echo "- https://review.openstack.org/#/c/404499/"
+    echo "- https://review.openstack.org/#/c/441137/"
     pushd $dir
+
     # download the smaller change
     git review -d 404499
     md5sum overcloud.j2.yaml overcloud-resource-registry-puppet.j2.yaml
@@ -102,4 +106,7 @@ if [ $THT -eq 1 ]; then
     # checksums should remain the same (no file conflicts here)
     md5sum overcloud.j2.yaml overcloud-resource-registry-puppet.j2.yaml
     popd
+
+    # update ceph-ansible-workflow.j2.yaml to pass other parameters
+    cp -v -f tht/ceph-ansible-workflow.j2.yaml $dir/extraconfig/tasks/ceph-ansible-workflow.j2.yaml
 fi

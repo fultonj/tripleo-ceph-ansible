@@ -1,0 +1,77 @@
+heat_template_version: ocata
+
+description: Triggers a Mistral workflow for the deployment of Ceph
+
+parameters:
+{% for role in roles %}
+  {{role.name}}IpListMap:
+    type: json
+{% endfor %}
+  CephAnsibleDeployWorkflowName:
+    type: string
+    description: Name of the Mistral workflow deploying Ceph
+    default: mistral-ceph-ansible
+  # We can consume any Ceph related parameter we like here and pass it to the
+  # workflow as inputs
+
+resources:
+  ceph_ansible_workflow:
+    type: OS::Mistral::WorkflowExecution
+    properties:
+      workflow: {get_param: CephAnsibleDeployWorkflowName}
+      input:
+        monitor_secret: AQBtcrVWAAAAABAA4JprB4BR5klHr3mgtqmX0w==
+        ip_version: ipv4
+        ceph_stable: true
+        ceph_stable_key: https://download.ceph.com/keys/release.asc
+        raw_journal_devices: ["/dev/vdd", "/dev/vdd"]
+        fsid: b007365e-cc87-11e5-a877-525400330ee0
+        ceph_stable_repo: http://download.ceph.com/rpm-jewel/
+        openstack_config: true
+        devices: ["/dev/vdb", "/dev/vdc"]
+        public_network: 192.168.24.0/24
+        ceph_stable_release: jewel
+        journal_collocation: false
+        cluster_network: 192.168.24.0/24
+        raw_multi_journal: ["/dev/vdd", "/dev/vdd"]
+        journal_size: 256
+        mons:
+          yaql:
+            expression: dict($.data.l.where($ != null).selectMany($.items()).groupBy($[0], $[1], [$[0], $[1].flatten()])).get("ceph_mon_node_ips")
+            data:
+              l:
+{% for role in roles %}
+                - {get_param: {{role.name}}IpListMap}
+{% endfor %}
+        osds:
+          yaql:
+            expression: dict($.data.l.where($ != null).selectMany($.items()).groupBy($[0], $[1], [$[0], $[1].flatten()])).get("ceph_osd_node_ips")
+            data:
+              l:
+{% for role in roles %}
+                - {get_param: {{role.name}}IpListMap}
+{% endfor %}
+        rgws:
+          yaql:
+            expression: dict($.data.l.where($ != null).selectMany($.items()).groupBy($[0], $[1], [$[0], $[1].flatten()])).get("ceph_rgw_node_ips")
+            data:
+              l:
+{% for role in roles %}
+                - {get_param: {{role.name}}IpListMap}
+{% endfor %}
+        mdss:
+          yaql:
+            expression: dict($.data.l.where($ != null).selectMany($.items()).groupBy($[0], $[1], [$[0], $[1].flatten()])).get("ceph_mds_node_ips")
+            data:
+              l:
+{% for role in roles %}
+                - {get_param: {{role.name}}IpListMap}
+{% endfor %}
+        rbd-mirrors:
+          yaql:
+            expression: dict($.data.l.where($ != null).selectMany($.items()).groupBy($[0], $[1], [$[0], $[1].flatten()])).get("ceph_rbdmirror_node_ips")
+            data:
+              l:
+{% for role in roles %}
+                - {get_param: {{role.name}}IpListMap}
+{% endfor %}
