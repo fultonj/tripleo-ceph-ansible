@@ -38,7 +38,7 @@ mistral-ceph-ansible:
     ansible_playbooks_copy:
       action: std.ssh
       input:
-        cmd: /usr/bin/cp -rf /usr/share/ceph-ansible /tmp/
+        cmd: /usr/bin/cp -rf /usr/share/ceph-ansible /tmp/ ; chown -R mistral:mistral /tmp/ceph-ansible
         host: localhost
         username: stack
         password: stack
