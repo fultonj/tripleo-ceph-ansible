@@ -34,6 +34,14 @@ mistral-ceph-ansible:
         host: localhost
         username: stack
         password: stack
+      on-success: ansible_playbooks_copy
+    ansible_playbooks_copy:
+      action: std.ssh
+      input:
+        cmd: /usr/bin/cp -rf /usr/share/ceph-ansible /tmp/
+        host: localhost
+        username: stack
+        password: stack
       on-success: mon_firewall
     mon_firewall: # this needs to be done in heat/puppet instead
       action: ansible
@@ -62,7 +70,7 @@ mistral-ceph-ansible:
     ceph_install:
       action: ansible-playbook
       input:
-        playbook: /usr/share/ceph-ansible/site.yml.sample
+        playbook: /tmp/ceph-ansible/site.yml.sample
         remote_user: heat-admin
         become: true
         become_user: root
