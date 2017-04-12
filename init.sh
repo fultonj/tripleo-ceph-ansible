@@ -73,6 +73,9 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     echo "Disabling Ansible host key checking"
     # https://github.com/openstack/tripleo-validations/blob/master/ansible.cfg#L3
     sudo sed -i -e s/\#host_key_checking\ =\ False/host_key_checking=False/g /etc/ansible/ansible.cfg
+
+    echo "Updating /etc/ansible/ansible.cfg action_plugins=/usr/share/ceph-ansible/plugins"
+    sudo sed -i -e s/\#action_plugins.*/action_plugins\ \=\ \\/usr\\/share\\/ceph-ansible\\/plugins\\/actions/g /etc/ansible/ansible.cfg
 fi
 
 if [ $HEAT -eq 1 ]; then
