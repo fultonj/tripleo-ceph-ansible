@@ -3,3 +3,5 @@ resource_registry:
 
 parameter_defaults:
   CephClusterFSID: b007365e-cc87-11e5-a877-525400330ee0
+  OvercloudControlFlavor: control
+  OvercloudComputeFlavor: compute

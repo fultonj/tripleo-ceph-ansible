@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+IRONIC=1
 MISTRAL=1
 MISTRAL_FORK=0
 MISTRAL_PRIV=1
@@ -11,6 +12,12 @@ HEAT=1
 THT=1
 
 source ~/stackrc
+
+if [ $IRONIC -eq 1 ]; then
+    echo "Updating ironic nodes with compute and control profiles for their respective flavors"
+    ironic node-update ceph-0 replace properties/capabilities=profile:compute,boot_option:local
+    ironic node-update control-0 replace properties/capabilities=profile:control,boot_option:local
+fi
 
 if [ $MISTRAL -eq 1 ]; then
     echo "Installing Mistral Ansbile actions from out of tree"
