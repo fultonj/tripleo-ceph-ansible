@@ -3,7 +3,7 @@ TripleO Installing Ceph with Ceph-Ansible POC
 
 This repository hosts POCs of the TripleO spec [Enable TripleO to Deploy Ceph via Ceph Ansible](https://specs.openstack.org/openstack/tripleo-specs/specs/pike/tripleo-ceph-ansible-integration.html). 
 
-The [initial milestones](milesones.md) have been accomplished and we
+The [initial milestones](milestones.md) have been accomplished and we
 have a video demo: 
 
 [![TripleO ceph-ansible POC Demo](https://img.youtube.com/vi/YWSsl6OrORY/0.jpg)](https://www.youtube.com/watch?v=YWSsl6OrORY)
