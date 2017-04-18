@@ -62,6 +62,9 @@ if [ $MISTRAL -eq 1 ]; then
 fi
 
 if [ $CEPH_ANSIBLE -eq 1 ]; then
+    echo "Ensuring /tmp/ceph-ansible does not exist"
+    sudo rm -rf /tmp/ceph-ansible/
+    
     echo "Installing ceph-ansible in /usr/share"
     if [ $CEPH_ANSIBLE_MASTER -eq 1]; then 
 	git clone git@github.com:ceph/ceph-ansible.git
