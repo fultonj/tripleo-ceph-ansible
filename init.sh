@@ -2,7 +2,7 @@
 
 IRONIC=1
 MISTRAL=1
-MISTRAL_FORK=0
+MISTRAL_MASTER=0
 MISTRAL_PRIV=1
 
 CEPH_ANSIBLE=1
@@ -22,9 +22,11 @@ fi
 if [ $MISTRAL -eq 1 ]; then
     echo "Installing Mistral Ansbile actions from out of tree"
     # https://github.com/d0ugal/mistral-ansible-actions
-    if [ $MISTRAL_FORK -eq 1 ]; then
-	# pull from my work isntead of pip
-	git clone https://github.com/fultonj/mistral-ansible-actions.git
+    if [ $MISTRAL_MASTER -eq 1 ]; then
+	# pull from git instead of pip
+	sudo rm -rf mistral-ansible-actions/
+	# git clone https://github.com/fultonj/mistral-ansible-actions.git
+	git clone https://github.com/d0ugal/mistral-ansible-actions.git	
 	sudo rm -Rf /usr/lib/python2.7/site-packages/mistral_ansible*
 	pushd mistral-ansible-actions
 	sudo python setup.py install
