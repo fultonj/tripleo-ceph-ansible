@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 
 IRONIC=1
+
 MISTRAL=1
-MISTRAL_MASTER=0
+MISTRAL_MASTER=1
 MISTRAL_PRIV=1
 
 CEPH_ANSIBLE=1
 CEPH_ANSIBLE_MASTER=0
 
-HEAT=1
+HEAT_OLD=1
+HEAT_NEW=0
+
 THT=1
 
 source ~/stackrc
@@ -90,13 +93,22 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     sudo sed -i -e s/\#action_plugins.*/action_plugins\ \=\ \\/usr\\/share\\/ceph-ansible\\/plugins\\/actions/g /etc/ansible/ansible.cfg
 fi
 
-if [ $HEAT -eq 1 ]; then
-    echo "Installing new Heat Resource from https://review.openstack.org/#/c/420664/"
+if [ $HEAT_OLD -eq 1 ]; then
+    echo "Installing new Heat Resource from https://review.openstack.org/#/c/420664/ patchset 6"
     # https://review.openstack.org/#/c/420664/
     sudo cp heat/workflow_execution.py /usr/lib/python2.7/site-packages/heat/engine/resources/openstack/mistral/
     sudo systemctl restart openstack-heat-engine
     openstack orchestration resource type show --template-type hot OS::Mistral::WorkflowExecution
 fi
+
+if [ $HEAT_NEW -eq 1 ]; then
+    echo "Installing new Heat Resource from https://review.openstack.org/#/c/420664/ patchset 9"
+    # https://review.openstack.org/#/c/420664/
+    sudo cp heat/external_resource.py /usr/lib/python2.7/site-packages/heat/engine/resources/openstack/mistral/
+    sudo systemctl restart openstack-heat-engine
+    openstack orchestration resource type show --template-type hot OS::Mistral::ExternalResource
+fi
+
 
 if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
