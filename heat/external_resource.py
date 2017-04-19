@@ -173,7 +173,7 @@ class MistralExternalResource(resource.Resource):
                 action_data[self.WORKFLOW],
                 jsonutils.dumps(inputs),
                 self.properties[self.DESCRIPTION],
-                **(action_data[self.PARAMS]) or {})
+                **action_data[self.PARAMS])
             self.resource_id_set(execution.id)
             return execution.id
 

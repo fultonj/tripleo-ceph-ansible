@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 
-IRONIC=1
+IRONIC=0
 
-MISTRAL=1
-MISTRAL_MASTER=1
-MISTRAL_PRIV=1
+MISTRAL=0
+MISTRAL_MASTER=0
+MISTRAL_PRIV=0
 
-CEPH_ANSIBLE=1
+CEPH_ANSIBLE=0
 CEPH_ANSIBLE_MASTER=0
 
-HEAT_OLD=1
-HEAT_NEW=0
+HEAT_OLD=0
+HEAT_NEW=1
 
-THT=1
+THT_OLD=0
+THT_NEW=1
 
 source ~/stackrc
 
@@ -110,7 +111,7 @@ if [ $HEAT_NEW -eq 1 ]; then
 fi
 
 
-if [ $THT -eq 1 ]; then
+if [ $(expr $THT_OLD + $THT_NEW) -gt 0 ]; then
     dir=/home/stack/tripleo-heat-templates
     if [ ! -d  $dir ]; then
 	# https://github.com/fultonj/oooq/blob/master/setup-deploy-artifacts.sh
@@ -122,21 +123,32 @@ if [ $THT -eq 1 ]; then
 	echo "No SSH agent with keys present. Will not be able to connect to git."
 	exit 1
     fi
-    echo "Patching ~/templates with unmerged changes from the following:"
-    echo "- https://review.openstack.org/#/c/404499/"
-    echo "- https://review.openstack.org/#/c/441137/"
-    pushd $dir
 
-    # download the smaller change
-    git review -d 404499
-    md5sum overcloud.j2.yaml overcloud-resource-registry-puppet.j2.yaml
-    
-    # download in the bigger change
-    git review -d 441137
-    # checksums should remain the same (no file conflicts here)
-    md5sum overcloud.j2.yaml overcloud-resource-registry-puppet.j2.yaml
-    popd
+    if [ $THT_OLD -eq 1 ]; then
+	echo "Patching ~/templates with unmerged changes from the following:"
+	echo "- https://review.openstack.org/#/c/404499/"
+	echo "- https://review.openstack.org/#/c/441137/"
+	pushd $dir
 
-    # update ceph-ansible-workflow.j2.yaml to pass other parameters
-    cp -v -f tht/ceph-ansible-workflow.j2.yaml $dir/extraconfig/tasks/ceph-ansible-workflow.j2.yaml
+	# download the smaller change
+	git review -d 404499
+	md5sum overcloud.j2.yaml overcloud-resource-registry-puppet.j2.yaml
+	
+	# download in the bigger change
+	git review -d 441137
+	# checksums should remain the same (no file conflicts here)
+	md5sum overcloud.j2.yaml overcloud-resource-registry-puppet.j2.yaml
+	popd
+
+	# update ceph-ansible-workflow.j2.yaml to pass other parameters
+	cp -v -f tht/ceph-ansible-workflow.j2.yaml $dir/extraconfig/tasks/ceph-ansible-workflow.j2.yaml
+    fi
+
+    if [ $THT_NEW -eq 1 ]; then
+	echo "Patching ~/templates with unmerged changes from the following:"
+	echo "- https://review.openstack.org/458058"
+	pushd $dir
+	git review -d 458058
+	popd
+    fi
 fi
