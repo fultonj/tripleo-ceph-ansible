@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
-IRONIC=1
+IRONIC=0
 
-MISTRAL=1
-MISTRAL_MASTER=1
+MISTRAL=0
+MISTRAL_MASTER=0
 MISTRAL_PRIV=0
 
-CEPH_ANSIBLE=0
+CEPH_ANSIBLE=1
 CEPH_ANSIBLE_MASTER=1
 
 HEAT_OLD=0
-HEAT_NEW=1
+HEAT_NEW=0
 
 THT_OLD=0
-THT_NEW=1
+THT_NEW=0
 
 source ~/stackrc
 
@@ -68,14 +68,18 @@ if [ $MISTRAL -eq 1 ]; then
 fi
 
 if [ $CEPH_ANSIBLE -eq 1 ]; then
-    echo "Ensuring /tmp/ceph-ansible does not exist"
+    echo "Ensuring /{tmp,usr/share}/ceph-ansible does not exist"
     sudo rm -rf /tmp/ceph-ansible/
+    sudo rm -rf /usr/share/ceph-ansible/
     
     echo "Installing ceph-ansible in /usr/share"
-    if [ $CEPH_ANSIBLE_MASTER -eq 1]; then 
+    if [ $CEPH_ANSIBLE_MASTER -eq 1 ]; then 
+	echo "Cloning master from it"
 	git clone git@github.com:ceph/ceph-ansible.git
 	sudo mv ceph-ansible /usr/share/
+	sudo chown -R root:root /usr/share/ceph-ansible
     else
+	echo "Downloading ceph-ansible RPM"
 	# The latest ceph-ansible CI RPM builds are listed at
 	# https://shaman.ceph.com/repos/ceph-ansible/master/
 	# https://shaman.ceph.com/api/repos/ceph-ansible/master/latest/centos/7/repo?arch=noarch
@@ -83,8 +87,8 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 	sudo sh -c "curl https://2.chacra.ceph.com/repos/ceph-ansible/master/661a9d0cdf35eb7d4b40ae25eaf4e8caa0e2dd18/centos/7/flavors/default/repo > ceph.repo"
 	popd
 	sudo yum -y install ceph-ansible
-	stat /usr/share/ceph-ansible/site.yml.sample
     fi
+    stat /usr/share/ceph-ansible/site.yml.sample
     
     echo "Disabling Ansible host key checking"
     # https://github.com/openstack/tripleo-validations/blob/master/ansible.cfg#L3
