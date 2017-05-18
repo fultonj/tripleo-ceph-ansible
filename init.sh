@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+DNS=1
+
 IRONIC=1
 
 MISTRAL=1
@@ -16,6 +18,14 @@ THT_OLD=0
 THT_NEW=1
 
 source ~/stackrc
+
+if [ $DNS -eq 1 ]; then
+    neutron subnet-list
+    SNET=$(neutron subnet-list | awk '/192/ {print $2}')
+    neutron subnet-show $SNET
+    neutron subnet-update ${SNET} --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248 
+    neutron subnet-show $SNET
+fi
 
 if [ $IRONIC -eq 1 ]; then
     echo "Updating ironic nodes with compute and control profiles for their respective flavors"
