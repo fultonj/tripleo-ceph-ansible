@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
-IRONIC=0
+IRONIC=1
 
-MISTRAL=0
-MISTRAL_MASTER=0
-MISTRAL_PRIV=0
+MISTRAL=1
+MISTRAL_MASTER=1
+MISTRAL_PRIV=1
 
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_MASTER=1
+CEPH_ANSIBLE_MASTER=0 
 
 HEAT_OLD=0
-HEAT_NEW=0
+HEAT_NEW=1
 
 THT_OLD=0
-THT_NEW=0
+THT_NEW=1
 
 source ~/stackrc
 
@@ -70,7 +70,6 @@ fi
 if [ $CEPH_ANSIBLE -eq 1 ]; then
     echo "Ensuring /{tmp,usr/share}/ceph-ansible does not exist"
     sudo rm -rf /tmp/ceph-ansible/
-    sudo rm -rf /usr/share/ceph-ansible/
     
     echo "Installing ceph-ansible in /usr/share"
     if [ $CEPH_ANSIBLE_MASTER -eq 1 ]; then 
@@ -79,14 +78,7 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 	sudo mv ceph-ansible /usr/share/
 	sudo chown -R root:root /usr/share/ceph-ansible
     else
-	echo "Downloading ceph-ansible RPM"
-	# The latest ceph-ansible CI RPM builds are listed at
-	# https://shaman.ceph.com/repos/ceph-ansible/master/
-	# https://shaman.ceph.com/api/repos/ceph-ansible/master/latest/centos/7/repo?arch=noarch
-	pushd /etc/yum.repos.d
-	sudo sh -c "curl https://2.chacra.ceph.com/repos/ceph-ansible/master/661a9d0cdf35eb7d4b40ae25eaf4e8caa0e2dd18/centos/7/flavors/default/repo > ceph.repo"
-	popd
-	sudo yum -y install ceph-ansible
+	bash install-ceph-ansible.sh
     fi
     stat /usr/share/ceph-ansible/site.yml.sample
     
