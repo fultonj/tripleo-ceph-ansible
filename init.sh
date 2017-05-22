@@ -15,7 +15,8 @@ HEAT_OLD=0
 HEAT_NEW=1
 
 THT_OLD=0
-THT_NEW=1
+THT_NEW=0
+THT_NEWER=1
 
 source ~/stackrc
 
@@ -117,7 +118,7 @@ if [ $HEAT_NEW -eq 1 ]; then
 fi
 
 
-if [ $(expr $THT_OLD + $THT_NEW) -gt 0 ]; then
+if [ $(expr $THT_OLD + $THT_NEW + $THT_NEWER) -gt 0 ]; then
     dir=/home/stack/tripleo-heat-templates
     if [ ! -d  $dir ]; then
 	# https://github.com/fultonj/oooq/blob/master/setup-deploy-artifacts.sh
@@ -155,6 +156,15 @@ if [ $(expr $THT_OLD + $THT_NEW) -gt 0 ]; then
 	echo "- https://review.openstack.org/458058"
 	pushd $dir
 	git review -d 458058
+	popd
+    fi
+
+    if [ $THT_NEWER -eq 1 ]; then
+	echo "Patching ~/templates with newer unmerged changes from the following:"
+	echo "- https://review.openstack.org/#/c/465066"
+	echo "- https://review.openstack.org/#/c/463324"
+	pushd $dir
+	git review -d 465066
 	popd
     fi
 fi
