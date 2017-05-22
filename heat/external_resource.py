@@ -28,21 +28,48 @@ LOG = logging.getLogger(__name__)
 class MistralExternalResource(resource.Resource):
     """A resource for managing Mistral workflow executions.
 
-    Executes Mistral workflows, possibly different ones basing on input action.
+    Executes Mistral workflows, possibly different ones basing on stack action.
     A workflow could be designed to only work with some specific actions.
 
-    Does not remove Mistral executions after resource is deleted; Mistral
-    performs cleanups of executions regularily.
+    The wanted behavior is described more in detail in the spec at:
+    https://blueprints.launchpad.net/heat/+spec/mistral-new-resource-type-workflow-execution
 
-    The spec at https://review.openstack.org/#/c/267770 describes the wanted
-    behavior with additional details.
+    An ExternalResource looks like this:
+
+    custom:
+      type: OS::Mistral::ExternalResource
+      properties:
+        actions:
+          CREATE:
+            workflow: {get_resource: create_workflow}
+            params:
+              target: create_my_custom_thing
+          UPDATE:
+            workflow: {get_resource: update_workflow}
+          DELETE:
+            workflow: {get_resource: delete_workflow}
+        input:
+          foo1: 123
+          foo2: 456
+        replace_on_change_inputs:
+          - foo2
+        always_update: true
+
+    NOTE: it does not remove Mistral executions after resource is deleted.
+    Mistral performs cleanups of executions periodically.
     """
 
-    support_status = support.SupportStatus(version='ocata')
+    support_status = support.SupportStatus(version='pike')
 
     default_client_name = 'mistral'
 
     entity = 'executions'
+
+    _ACTION_PROPERTIES = (
+        WORKFLOW, PARAMS
+    ) = (
+        'workflow', 'params'
+    )
 
     PROPERTIES = (
         EX_ACTIONS,
@@ -58,20 +85,15 @@ class MistralExternalResource(resource.Resource):
         'always_update'
     )
 
-    _ACTION_PROPERTIES = (
-        WORKFLOW, PARAMS
-    ) = (
-        'workflow', 'params'
-    )
-
     ATTRIBUTES = (
         OUTPUT,
     ) = (
         'output',
     )
 
-    _action_schema = properties.Schema(
+    _action_properties_schema = properties.Schema(
         properties.Schema.MAP,
+        _('Dictionary which defines the workflow to run and its params.'),
         schema={
             WORKFLOW: properties.Schema(
                 properties.Schema.STRING,
@@ -83,9 +105,10 @@ class MistralExternalResource(resource.Resource):
             ),
             PARAMS: properties.Schema(
                 properties.Schema.MAP,
-                _("Workflow additional parameters. If Workflow is reverse "
-                  "typed, params requires 'task_name', which defines "
-                  "initial task."),
+                _('Workflow additional parameters. If workflow is reverse '
+                  'typed, params requires "task_name", which defines '
+                  'initial task.'),
+                default={}
             ),
         }
     )
@@ -95,11 +118,11 @@ class MistralExternalResource(resource.Resource):
             properties.Schema.MAP,
             _('Resource action which triggers a workflow execution.'),
             schema={
-                'CREATE': _action_schema,
-                'UPDATE': _action_schema,
-                'SUSPEND': _action_schema,
-                'RESUME': _action_schema,
-                'DELETE': _action_schema,
+                'CREATE': _action_properties_schema,
+                'UPDATE': _action_properties_schema,
+                'SUSPEND': _action_properties_schema,
+                'RESUME': _action_properties_schema,
+                'DELETE': _action_properties_schema,
             },
             required=True
         ),
@@ -112,7 +135,7 @@ class MistralExternalResource(resource.Resource):
         DESCRIPTION: properties.Schema(
             properties.Schema.STRING,
             _('Workflow execution description.'),
-            default="Heat managed"
+            default='Heat managed'
         ),
         REPLACE_ON_CHANGE: properties.Schema(
             properties.Schema.LIST,
@@ -134,7 +157,7 @@ class MistralExternalResource(resource.Resource):
         ),
     }
 
-    def _check_execution_success(self, action, execution_id):
+    def _check_execution(self, action, execution_id):
         """Check execution status.
 
         Returns False if in IDLE, RUNNING or PAUSED
@@ -143,15 +166,15 @@ class MistralExternalResource(resource.Resource):
         raises ResourceUnknownState otherwise.
         """
         execution = self.client().executions.get(execution_id)
-        LOG.debug('Mistral execution %(id)s status is: '
+        LOG.debug('Mistral execution %(id)s is in state '
                   '%(state)s' % {'id': execution_id,
                                  'state': execution.state})
 
         if execution.state in ('IDLE', 'RUNNING', 'PAUSED'):
-            return False
+            return False, jsonutils.loads(execution.output)
 
-        if execution.state in ('SUCCESS'):
-            return True
+        if execution.state in ('SUCCESS',):
+            return True, jsonutils.loads(execution.output)
 
         if execution.state in ('ERROR', 'CANCELLED'):
             raise exception.ResourceFailure(
@@ -166,32 +189,61 @@ class MistralExternalResource(resource.Resource):
     def _handle_action(self, action, inputs=None):
         action_data = self.properties[self.EX_ACTIONS].get(action)
         if action_data:
-            # inputs can be not None if it is updated on stack UPDATE
+            # inputs is not None if inputs changed on stack UPDATE
             if not inputs:
                 inputs = self.properties[self.INPUT]
+            # bring forward output from previous executions
+            if action is not self.CREATE and self.resource_id:
+                execution = self.client().executions.get(self.resource_id)
+                erd = jsonutils.loads(execution.output)
+                erd.update(action_data[self.PARAMS].get('env', {}))
+                action_data[self.PARAMS]['env']['heat_extresource_data'] = erd
             execution = self.client().executions.create(
                 action_data[self.WORKFLOW],
                 jsonutils.dumps(inputs),
                 self.properties[self.DESCRIPTION],
-                **(action_data[self.PARAMS]) or {})
-            self.resource_id_set(execution.id)
+                **action_data[self.PARAMS])
+            LOG.debug('Mistral execution %(id)s params set to '
+                      '%(params)s' % {'id': execution.id,
+                                      'params': action_data[self.PARAMS]})
             return execution.id
 
-    def _check_complete(self, action, execution_id):
+    def _check_action(self, action, execution_id):
+        success = True
+        # execution_id is None if no data is available for a given action
         if execution_id:
-            return self._check_execution_success(action, execution_id)
+            rsrc_id = execution_id
+            success, output = self._check_execution(action, execution_id)
+            # set resource id using output, if found
+            if success and output.get('resource_id'):
+                rsrc_id = output.get('resource_id')
+                LOG.debug('ExternalResource id set to %(rid)s from Mistral '
+                          'execution %(eid)s output' % {'eid': execution_id,
+                                                        'rid': rsrc_id})
+            self.resource_id_set(rsrc_id)
+        return success
 
     def _resolve_attribute(self, name):
         if self.resource_id:
             execution = self.client().executions.get(self.resource_id)
-            if name == self.OUTPUT:
-                return execution.output
-            return execution.id
+            return getattr(execution, name)
 
     def _needs_update(self, after, before, after_props, before_props,
                       prev_resource, check_init_complete=True):
+        # check if we need to force replace first
+        old_inputs = before_props.get(self.INPUT)
+        new_inputs = after_props.get(self.INPUT)
+        for i in self.properties[self.REPLACE_ON_CHANGE]:
+            if old_inputs.get(i) != new_inputs.get(i):
+                LOG.debug('Replacing ExternalResource %(id) instead of '
+                          'updating due to change to input "%(i)s"' %
+                          {"id": self.resource_id,
+                           "i": i})
+                raise resource.UpdateReplace(self)
+        # honor always_update if found
         if self.properties[self.ALWAYS_UPDATE]:
             return True
+        # call super in all other scenarios
         else:
             return super(MistralExternalResource,
                          self)._needs_update(after,
@@ -205,40 +257,32 @@ class MistralExternalResource(resource.Resource):
         return self._handle_action(self.CREATE)
 
     def check_create_complete(self, execution_id):
-        return self._check_complete(self.CREATE, execution_id)
+        return self._check_action(self.CREATE, execution_id)
 
     def handle_update(self, json_snippet, tmpl_diff, prop_diff):
-        action = self.UPDATE
-        old_inputs = self.properties[self.INPUT]
         new_inputs = prop_diff.get(self.INPUT)
-        if new_inputs:
-            for i in self.properties[self.REPLACE_ON_CHANGE]:
-                if old_inputs.get(i) != new_inputs.get(i):
-                    LOG.debug('Replacing instead of updating due to change in '
-                              'input "%s"', i)
-                    raise resource.UpdateReplace
-        return self._handle_action(action, new_inputs)
+        return self._handle_action(self.UPDATE, new_inputs)
 
     def check_update_complete(self, execution_id):
-        return self._check_complete(self.UPDATE, execution_id)
+        return self._check_action(self.UPDATE, execution_id)
 
     def handle_suspend(self):
         return self._handle_action(self.SUSPEND)
 
     def check_suspend_complete(self, execution_id):
-        return self._check_complete(self.SUSPEND, execution_id)
+        return self._check_action(self.SUSPEND, execution_id)
 
     def handle_resume(self):
         return self._handle_action(self.RESUME)
 
     def check_resume_complete(self, execution_id):
-        return self._check_complete(self.RESUME, execution_id)
+        return self._check_action(self.RESUME, execution_id)
 
     def handle_delete(self):
         return self._handle_action(self.DELETE)
 
     def check_delete_complete(self, execution_id):
-        return self._check_complete(self.DELETE, execution_id)
+        return self._check_action(self.DELETE, execution_id)
 
 
 def resource_mapping():
