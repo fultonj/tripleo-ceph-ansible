@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
 
-DNS=1
+DNS=0
 
-IRONIC=1
+IRONIC=0
 
-MISTRAL=1
-MISTRAL_MASTER=1
-MISTRAL_PRIV=1
+MISTRAL=0
+MISTRAL_MASTER=0
+MISTRAL_PRIV=0
 
-CEPH_ANSIBLE=1
+CEPH_ANSIBLE=0
 CEPH_ANSIBLE_MASTER=0 
 
-HEAT_OLD=0
-HEAT_NEW=1
+HEAT=1
 
 THT_OLD=0
 THT_NEW=0
-THT_NEWER=1
+THT_NEWER=0
 
 source ~/stackrc
 
@@ -101,18 +100,13 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     sudo sed -i -e s/\#action_plugins.*/action_plugins\ \=\ \\/usr\\/share\\/ceph-ansible\\/plugins\\/actions/g /etc/ansible/ansible.cfg
 fi
 
-if [ $HEAT_OLD -eq 1 ]; then
-    echo "Installing new Heat Resource from https://review.openstack.org/#/c/420664/ patchset 6"
-    # https://review.openstack.org/#/c/420664/
-    sudo cp heat/workflow_execution.py /usr/lib/python2.7/site-packages/heat/engine/resources/openstack/mistral/
-    sudo systemctl restart openstack-heat-engine
-    openstack orchestration resource type show --template-type hot OS::Mistral::WorkflowExecution
-fi
-
-if [ $HEAT_NEW -eq 1 ]; then
-    echo "Installing new Heat Resource from https://review.openstack.org/#/c/420664/ patchset 9"
-    # https://review.openstack.org/#/c/420664/
-    sudo cp heat/external_resource.py /usr/lib/python2.7/site-packages/heat/engine/resources/openstack/mistral/
+if [ $HEAT -eq 1 ]; then
+    echo "Installing Heat Updates: "
+    echo " - https://review.openstack.org/#/c/420664/"
+    # heat/engine/resources/openstack/mistral/external_resource.py
+    echo " - https://review.openstack.org/#/c/463297/"
+    # heat/engine/resources/openstack/mistral/workflow.py
+    sudo cp heat/*.py /usr/lib/python2.7/site-packages/heat/engine/resources/openstack/mistral/
     sudo systemctl restart openstack-heat-engine
     openstack orchestration resource type show --template-type hot OS::Mistral::ExternalResource
 fi
