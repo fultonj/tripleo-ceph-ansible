@@ -1,0 +1,77 @@
+---
+version: '2.0'
+
+mistral-ceph-ansible-containers:
+  type: direct
+  input: 
+    - fsid
+    - monitor_secret
+    - docker
+    - ceph_docker_image_tag
+    - mon_containerized_deployment
+    - osd_containerized_deployment
+    - mds_containerized_deployment
+    - rgw_containerized_deployment
+    - cluster
+    - ceph_mon_docker_interface
+    - ceph_mon_docker_subnet
+    - journal_size
+    - ceph_docker_on_openstack
+    - public_network
+    - cluster_network
+    - journal_collocation
+    - ceph_rgw_civetweb_port
+    - ceph_osd_docker_devices
+  tasks:
+    ansible_hosts_update:
+      action: std.ssh
+      input:
+        cmd: /home/stack/tripleo-ceph-ansible/ansible-inventory.sh
+        host: localhost
+        username: stack
+        password: stack
+      on-success: ansible_playbooks_copy
+    ansible_playbooks_copy:
+      action: std.ssh
+      input:
+        cmd: /usr/bin/cp -rf /usr/share/ceph-ansible /tmp/ ; sudo chown -R mistral:mistral /tmp/ceph-ansible
+        host: localhost
+        username: stack
+        password: stack
+      on-success: mon_firewall
+    mon_firewall: # this needs to be done in heat/puppet instead
+      action: ansible
+      input:
+        hosts: 'mons'
+        module: iptables
+        module_args: 'chain=INPUT protocol=tcp destination_port=6789 jump=ACCEPT'
+        remote_user: heat-admin
+        become: true
+        become_user: root
+      publish:
+        output: <% task(mon_firewall).result %>
+      on-success: osd_firewall
+    osd_firewall: # this needs to be done in heat/puppet instead
+      action: ansible
+      input:
+        hosts: 'osds'
+        module: iptables
+        module_args: 'chain=INPUT protocol=tcp destination_port=6800:7300 jump=ACCEPT'
+        remote_user: heat-admin
+        become: true
+        become_user: root
+      publish:
+        output: <% task(osd_firewall).result %>
+      on-success: ceph_install
+    ceph_install:
+      action: ansible-playbook
+      input:
+        playbook: /tmp/ceph-ansible/site.yml.sample
+        remote_user: heat-admin
+        become: true
+        become_user: root
+        verbosity: 0
+        # skip_tags: package-install
+        extra_vars: {"ceph_mon_docker_interface":"<% $.ceph_mon_docker_interface %>", "ceph_mon_docker_subnet":"<% $.ceph_mon_docker_subnet %>", "public_network":"<% $.public_network %>", "monitor_secret":"<% $.monitor_secret %>", "rgw_containerized_deployment":<% $.rgw_containerized_deployment %>, "ceph_rgw_civetweb_port":<% $.ceph_rgw_civetweb_port %>, "ceph_docker_image_tag":"<% $.ceph_docker_image_tag %>", "osd_containerized_deployment":<% $.osd_containerized_deployment %>, "cluster":"<% $.cluster %>", "mds_containerized_deployment":<% $.mds_containerized_deployment %>, "ceph_osd_docker_devices":<% $.ceph_osd_docker_devices %>, "mon_containerized_deployment":<% $.mon_containerized_deployment %>, "journal_collocation":<% $.journal_collocation %>, "ceph_docker_on_openstack":<% $.ceph_docker_on_openstack %>, "docker":<% $.docker %>, "cluster_network":"<% $.cluster_network %>", "fsid":"<% $.fsid %>", "journal_size":<% $.journal_size %>}
+      publish:
+        output: <% task(ceph_install).result %>
