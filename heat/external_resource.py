@@ -13,6 +13,7 @@
 
 from oslo_log import log as logging
 from oslo_serialization import jsonutils
+import six
 
 from heat.common import exception
 from heat.common.i18n import _
@@ -26,40 +27,26 @@ LOG = logging.getLogger(__name__)
 
 
 class MistralExternalResource(resource.Resource):
-    """A resource for managing Mistral workflow executions.
+    """A plugin for managing user-defined resources via Mistral workflows.
 
-    Executes Mistral workflows, possibly different ones basing on stack action.
-    A workflow could be designed to only work with some specific actions.
+    This resource allows users to manage resources that are not known to Heat.
+    The user may specify a Mistral workflow to handle each resource action,
+    such as CREATE, UPDATE, or DELETE.
 
-    The wanted behavior is described more in detail in the spec at:
-    https://blueprints.launchpad.net/heat/+spec/mistral-new-resource-type-workflow-execution
+    The workflows may return an output named 'resource_id', which will be
+    treated as the physical ID of the resource by Heat.
 
-    An ExternalResource looks like this:
+    Once the resource is created, subsequent workflow runs will receive the
+    output of the last workflow execution in the 'heat_extresource_data' key
+    in the workflow environment (accessible as ``env().heat_extresource_data``
+    in the workflow).
 
-    custom:
-      type: OS::Mistral::ExternalResource
-      properties:
-        actions:
-          CREATE:
-            workflow: {get_resource: create_workflow}
-            params:
-              target: create_my_custom_thing
-          UPDATE:
-            workflow: {get_resource: update_workflow}
-          DELETE:
-            workflow: {get_resource: delete_workflow}
-        input:
-          foo1: 123
-          foo2: 456
-        replace_on_change_inputs:
-          - foo2
-        always_update: true
-
-    NOTE: it does not remove Mistral executions after resource is deleted.
-    Mistral performs cleanups of executions periodically.
+    The template author may specify a subset of inputs as causing replacement
+    of the resource when they change, as an alternative to running the
+    UPDATE workflow.
     """
 
-    support_status = support.SupportStatus(version='pike')
+    support_status = support.SupportStatus(version='9.0.0')
 
     default_client_name = 'mistral'
 
@@ -118,11 +105,11 @@ class MistralExternalResource(resource.Resource):
             properties.Schema.MAP,
             _('Resource action which triggers a workflow execution.'),
             schema={
-                'CREATE': _action_properties_schema,
-                'UPDATE': _action_properties_schema,
-                'SUSPEND': _action_properties_schema,
-                'RESUME': _action_properties_schema,
-                'DELETE': _action_properties_schema,
+                resource.Resource.CREATE: _action_properties_schema,
+                resource.Resource.UPDATE: _action_properties_schema,
+                resource.Resource.SUSPEND: _action_properties_schema,
+                resource.Resource.RESUME: _action_properties_schema,
+                resource.Resource.DELETE: _action_properties_schema,
             },
             required=True
         ),
@@ -139,7 +126,8 @@ class MistralExternalResource(resource.Resource):
         ),
         REPLACE_ON_CHANGE: properties.Schema(
             properties.Schema.LIST,
-            _('Which attributes cause resource replace.'),
+            _('A list of inputs that should cause the resource to be replaced '
+              'when their values change.'),
             default=[]
         ),
         ALWAYS_UPDATE: properties.Schema(
@@ -171,7 +159,7 @@ class MistralExternalResource(resource.Resource):
                                  'state': execution.state})
 
         if execution.state in ('IDLE', 'RUNNING', 'PAUSED'):
-            return False, jsonutils.loads(execution.output)
+            return False, {}
 
         if execution.state in ('SUCCESS',):
             return True, jsonutils.loads(execution.output)
@@ -189,15 +177,15 @@ class MistralExternalResource(resource.Resource):
     def _handle_action(self, action, inputs=None):
         action_data = self.properties[self.EX_ACTIONS].get(action)
         if action_data:
-            # inputs is not None if inputs changed on stack UPDATE
+            # bring forward output from previous executions into env
+            if self.resource_id:
+                old_outputs = jsonutils.loads(self.data().get('outputs', '{}'))
+                action_env = action_data[self.PARAMS].get('env', {})
+                action_env['heat_extresource_data'] = old_outputs
+                action_data[self.PARAMS]['env'] = action_env
+            # inputs is not None when inputs changed on stack UPDATE
             if not inputs:
                 inputs = self.properties[self.INPUT]
-            # bring forward output from previous executions
-            if action is not self.CREATE and self.resource_id:
-                execution = self.client().executions.get(self.resource_id)
-                erd = jsonutils.loads(execution.output)
-                erd.update(action_data[self.PARAMS].get('env', {}))
-                action_data[self.PARAMS]['env']['heat_extresource_data'] = erd
             execution = self.client().executions.create(
                 action_data[self.WORKFLOW],
                 jsonutils.dumps(inputs),
@@ -210,32 +198,35 @@ class MistralExternalResource(resource.Resource):
 
     def _check_action(self, action, execution_id):
         success = True
-        # execution_id is None if no data is available for a given action
+        # execution_id is None when no data is available for a given action
         if execution_id:
             rsrc_id = execution_id
             success, output = self._check_execution(action, execution_id)
+            # merge output with outputs of previous executions
+            outputs = jsonutils.loads(self.data().get('outputs', '{}'))
+            outputs.update(output)
+            self.data_set('outputs', jsonutils.dumps(outputs))
             # set resource id using output, if found
-            if success and output.get('resource_id'):
+            if output.get('resource_id'):
                 rsrc_id = output.get('resource_id')
                 LOG.debug('ExternalResource id set to %(rid)s from Mistral '
                           'execution %(eid)s output' % {'eid': execution_id,
                                                         'rid': rsrc_id})
-            self.resource_id_set(rsrc_id)
+            self.resource_id_set(six.text_type(rsrc_id)[:255])
         return success
 
     def _resolve_attribute(self, name):
-        if self.resource_id:
-            execution = self.client().executions.get(self.resource_id)
-            return getattr(execution, name)
+        if self.resource_id and name == self.OUTPUT:
+            return self.data().get('outputs')
 
     def _needs_update(self, after, before, after_props, before_props,
                       prev_resource, check_init_complete=True):
         # check if we need to force replace first
-        old_inputs = before_props.get(self.INPUT)
-        new_inputs = after_props.get(self.INPUT)
-        for i in self.properties[self.REPLACE_ON_CHANGE]:
+        old_inputs = before_props[self.INPUT]
+        new_inputs = after_props[self.INPUT]
+        for i in after_props[self.REPLACE_ON_CHANGE]:
             if old_inputs.get(i) != new_inputs.get(i):
-                LOG.debug('Replacing ExternalResource %(id) instead of '
+                LOG.debug('Replacing ExternalResource %(id)s instead of '
                           'updating due to change to input "%(i)s"' %
                           {"id": self.resource_id,
                            "i": i})
@@ -289,4 +280,3 @@ def resource_mapping():
     return {
         'OS::Mistral::ExternalResource': MistralExternalResource
     }
-

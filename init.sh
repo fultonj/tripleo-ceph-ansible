@@ -11,12 +11,11 @@ MISTRAL_PRIV=1
 CEPH_ANSIBLE=1
 CEPH_ANSIBLE_MASTER=0 
 
-HEAT_OLD=0
-HEAT_NEW=1
+HEAT=1
 
 THT_OLD=0
 THT_NEW=0
-THT_NEWER=1
+THT_NEWER=0
 
 source ~/stackrc
 
@@ -40,10 +39,12 @@ if [ $MISTRAL -eq 1 ]; then
     if [ $MISTRAL_MASTER -eq 1 ]; then
 	# pull from git instead of pip
 	sudo rm -rf mistral-ansible-actions/
-	# git clone https://github.com/fultonj/mistral-ansible-actions.git
-	git clone https://github.com/d0ugal/mistral-ansible-actions.git	
+	git clone https://github.com/fultonj/mistral-ansible-actions.git
+	# git clone https://github.com/d0ugal/mistral-ansible-actions.git	
 	sudo rm -Rf /usr/lib/python2.7/site-packages/mistral_ansible*
 	pushd mistral-ansible-actions
+	# be less verbose...
+	# https://github.com/d0ugal/mistral-ansible-actions/blob/master/mistral_ansible_actions.py#L110
 	sudo python setup.py install
 	popd
     else
@@ -101,18 +102,13 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     sudo sed -i -e s/\#action_plugins.*/action_plugins\ \=\ \\/usr\\/share\\/ceph-ansible\\/plugins\\/actions/g /etc/ansible/ansible.cfg
 fi
 
-if [ $HEAT_OLD -eq 1 ]; then
-    echo "Installing new Heat Resource from https://review.openstack.org/#/c/420664/ patchset 6"
-    # https://review.openstack.org/#/c/420664/
-    sudo cp heat/workflow_execution.py /usr/lib/python2.7/site-packages/heat/engine/resources/openstack/mistral/
-    sudo systemctl restart openstack-heat-engine
-    openstack orchestration resource type show --template-type hot OS::Mistral::WorkflowExecution
-fi
-
-if [ $HEAT_NEW -eq 1 ]; then
-    echo "Installing new Heat Resource from https://review.openstack.org/#/c/420664/ patchset 9"
-    # https://review.openstack.org/#/c/420664/
-    sudo cp heat/external_resource.py /usr/lib/python2.7/site-packages/heat/engine/resources/openstack/mistral/
+if [ $HEAT -eq 1 ]; then
+    echo "Installing Heat Updates: "
+    echo " - https://review.openstack.org/#/c/420664/"
+    # heat/engine/resources/openstack/mistral/external_resource.py
+    echo " - https://review.openstack.org/#/c/463297/"
+    # heat/engine/resources/openstack/mistral/workflow.py
+    sudo cp heat/*.py /usr/lib/python2.7/site-packages/heat/engine/resources/openstack/mistral/
     sudo systemctl restart openstack-heat-engine
     openstack orchestration resource type show --template-type hot OS::Mistral::ExternalResource
 fi
@@ -161,10 +157,12 @@ if [ $(expr $THT_OLD + $THT_NEW + $THT_NEWER) -gt 0 ]; then
 
     if [ $THT_NEWER -eq 1 ]; then
 	echo "Patching ~/templates with newer unmerged changes from the following:"
-	echo "- https://review.openstack.org/#/c/465066"
 	echo "- https://review.openstack.org/#/c/463324"
+	echo "- https://review.openstack.org/#/c/467682"
+	echo "- https://review.openstack.org/#/c/465066"
 	pushd $dir
-	git review -d 465066
+	# this will pull in 463324 and 467682 via dependencies
+	git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/2 && git checkout FETCH_HEAD
 	popd
     fi
 fi

@@ -74,6 +74,7 @@ mistral-ceph-ansible:
         remote_user: heat-admin
         become: true
         become_user: root
+        verbosity: 0
         # skip_tags: package-install
         # i generated this w/ python, will make extensible later
         extra_vars: {"monitor_secret":"<% $.monitor_secret %>", "ip_version":"<% $.ip_version %>", "journal_size": <% $.journal_size %>, "ceph_stable": <% $.ceph_stable %>, "ceph_stable_key":"<% $.ceph_stable_key %>", "raw_journal_devices": <% $.raw_journal_devices %>, "fsid":"<% $.fsid %>", "ceph_stable_repo":"<% $.ceph_stable_repo %>", "openstack_config":"<% $.openstack_config %>", "devices":"<% $.devices %>", "public_network":"<% $.public_network %>", "ceph_stable_release":"<% $.ceph_stable_release %>", "journal_collocation": <% $.journal_collocation %>, "cluster_network":"<% $.cluster_network %>", "raw_multi_journal": <% $.raw_multi_journal %>, "monitor_interface":"br-ex"}
