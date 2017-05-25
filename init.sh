@@ -11,11 +11,11 @@ MISTRAL_PRIV=0
 CEPH_ANSIBLE=0
 CEPH_ANSIBLE_MASTER=0 
 
-HEAT=1
+HEAT=0
 
 THT_OLD=0
 THT_NEW=0
-THT_NEWER=0
+THT_NEWER=1
 
 source ~/stackrc
 
@@ -39,10 +39,12 @@ if [ $MISTRAL -eq 1 ]; then
     if [ $MISTRAL_MASTER -eq 1 ]; then
 	# pull from git instead of pip
 	sudo rm -rf mistral-ansible-actions/
-	# git clone https://github.com/fultonj/mistral-ansible-actions.git
-	git clone https://github.com/d0ugal/mistral-ansible-actions.git	
+	git clone https://github.com/fultonj/mistral-ansible-actions.git
+	# git clone https://github.com/d0ugal/mistral-ansible-actions.git	
 	sudo rm -Rf /usr/lib/python2.7/site-packages/mistral_ansible*
 	pushd mistral-ansible-actions
+	# be less verbose...
+	# https://github.com/d0ugal/mistral-ansible-actions/blob/master/mistral_ansible_actions.py#L110
 	sudo python setup.py install
 	popd
     else
@@ -155,8 +157,9 @@ if [ $(expr $THT_OLD + $THT_NEW + $THT_NEWER) -gt 0 ]; then
 
     if [ $THT_NEWER -eq 1 ]; then
 	echo "Patching ~/templates with newer unmerged changes from the following:"
-	echo "- https://review.openstack.org/#/c/465066"
 	echo "- https://review.openstack.org/#/c/463324"
+	echo "- https://review.openstack.org/#/c/467682"
+	echo "- https://review.openstack.org/#/c/465066"
 	pushd $dir
 	git review -d 465066
 	popd
