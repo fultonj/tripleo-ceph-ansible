@@ -161,7 +161,8 @@ if [ $(expr $THT_OLD + $THT_NEW + $THT_NEWER) -gt 0 ]; then
 	echo "- https://review.openstack.org/#/c/467682"
 	echo "- https://review.openstack.org/#/c/465066"
 	pushd $dir
-	git review -d 465066
+	# this will pull in 463324 and 467682 via dependencies
+	git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/2 && git checkout FETCH_HEAD
 	popd
     fi
 fi
