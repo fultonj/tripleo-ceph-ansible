@@ -20,7 +20,7 @@ osd_containerized_deployment: True
 #cluster: test
 cluster: ceph
 #ceph_mon_docker_interface: eth1
-ceph_mon_docker_interface: eth0
+ceph_mon_docker_interface: 'br_ex'
 
 ceph_mon_docker_subnet: "{{ public_network }}"
 journal_size: 100
