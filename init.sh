@@ -132,7 +132,7 @@ if [ $THT -gt 0 ]; then
     echo "- https://review.openstack.org/#/c/465066"
     pushd $dir
     # this will pull in 463324 and 467682 via dependencies
-    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/24/463324/8 && git checkout FETCH_HEAD
+    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/6 && git checkout FETCH_HEAD
     git checkout -b bp/tripleo-ceph-ansible
     popd 
 fi
