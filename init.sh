@@ -5,7 +5,7 @@ DNS=1
 IRONIC=1
 
 MISTRAL=1
-MISTRAL_MASTER=1
+MISTRAL_MASTER=0
 MISTRAL_PRIV=1
 
 CEPH_ANSIBLE=1
@@ -13,9 +13,7 @@ CEPH_ANSIBLE_MASTER=0
 
 HEAT=1
 
-THT_OLD=0
-THT_NEW=0
-THT_NEWER=0
+THT=1
 
 source ~/stackrc
 
@@ -103,6 +101,7 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 fi
 
 if [ $HEAT -eq 1 ]; then
+    # these have merged so this won't be necessary much longer
     echo "Installing Heat Updates: "
     echo " - https://review.openstack.org/#/c/420664/"
     # heat/engine/resources/openstack/mistral/external_resource.py
@@ -114,7 +113,7 @@ if [ $HEAT -eq 1 ]; then
 fi
 
 
-if [ $(expr $THT_OLD + $THT_NEW + $THT_NEWER) -gt 0 ]; then
+if [ $THT -gt 0 ]; then
     dir=/home/stack/tripleo-heat-templates
     if [ ! -d  $dir ]; then
 	# https://github.com/fultonj/oooq/blob/master/setup-deploy-artifacts.sh
@@ -127,42 +126,13 @@ if [ $(expr $THT_OLD + $THT_NEW + $THT_NEWER) -gt 0 ]; then
 	exit 1
     fi
 
-    if [ $THT_OLD -eq 1 ]; then
-	echo "Patching ~/templates with unmerged changes from the following:"
-	echo "- https://review.openstack.org/#/c/404499/"
-	echo "- https://review.openstack.org/#/c/441137/"
-	pushd $dir
-
-	# download the smaller change
-	git review -d 404499
-	md5sum overcloud.j2.yaml overcloud-resource-registry-puppet.j2.yaml
-	
-	# download in the bigger change
-	git review -d 441137
-	# checksums should remain the same (no file conflicts here)
-	md5sum overcloud.j2.yaml overcloud-resource-registry-puppet.j2.yaml
-	popd
-
-	# update ceph-ansible-workflow.j2.yaml to pass other parameters
-	cp -v -f tht/ceph-ansible-workflow.j2.yaml $dir/extraconfig/tasks/ceph-ansible-workflow.j2.yaml
-    fi
-
-    if [ $THT_NEW -eq 1 ]; then
-	echo "Patching ~/templates with unmerged changes from the following:"
-	echo "- https://review.openstack.org/458058"
-	pushd $dir
-	git review -d 458058
-	popd
-    fi
-
-    if [ $THT_NEWER -eq 1 ]; then
-	echo "Patching ~/templates with newer unmerged changes from the following:"
-	echo "- https://review.openstack.org/#/c/463324"
-	echo "- https://review.openstack.org/#/c/467682"
-	echo "- https://review.openstack.org/#/c/465066"
-	pushd $dir
-	# this will pull in 463324 and 467682 via dependencies
-	git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/2 && git checkout FETCH_HEAD
-	popd
-    fi
+    echo "Patching ~/templates with newer unmerged changes from the following:"
+    echo "- https://review.openstack.org/#/c/463324"
+    echo "- https://review.openstack.org/#/c/467682"
+    echo "- https://review.openstack.org/#/c/465066"
+    pushd $dir
+    # this will pull in 463324 and 467682 via dependencies
+    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/24/463324/8 && git checkout FETCH_HEAD
+    git checkout -b bp/tripleo-ceph-ansible
+    popd 
 fi

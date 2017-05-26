@@ -11,6 +11,8 @@ if [ -z $TASK_ID ]; then
     echo "Error: unable to find TASK_ID. Exixting."
     exit 1
 fi
-#mistral task-get $TASK_ID
+mistral task-get $TASK_ID
 mistral task-get-result $TASK_ID | jq . | sed -e 's/\\n/\n/g' -e 's/\\"/"/g'
 
+export UUID
+export TASK_ID
