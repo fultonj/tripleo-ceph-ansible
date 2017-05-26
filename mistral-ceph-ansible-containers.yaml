@@ -24,14 +24,6 @@ mistral-ceph-ansible-containers:
     - ceph_osd_docker_devices
     - devices
   tasks:
-    ansible_hosts_update:
-      action: std.ssh
-      input:
-        cmd: /home/stack/tripleo-ceph-ansible/ansible-inventory.sh
-        host: localhost
-        username: stack
-        password: stack
-      on-success: ansible_playbooks_copy
     ansible_playbooks_copy:
       action: std.ssh
       input:
@@ -39,40 +31,22 @@ mistral-ceph-ansible-containers:
         host: localhost
         username: stack
         password: stack
-      on-success: mon_firewall
-    mon_firewall: # this needs to be done in heat/puppet instead
-      action: ansible
-      input:
-        hosts: 'mons'
-        module: iptables
-        module_args: 'chain=INPUT protocol=tcp destination_port=6789 jump=ACCEPT'
-        remote_user: heat-admin
-        become: true
-        become_user: root
-      publish:
-        output: <% task(mon_firewall).result %>
-      on-success: osd_firewall
-    osd_firewall: # this needs to be done in heat/puppet instead
-      action: ansible
-      input:
-        hosts: 'osds'
-        module: iptables
-        module_args: 'chain=INPUT protocol=tcp destination_port=6800:7300 jump=ACCEPT'
-        remote_user: heat-admin
-        become: true
-        become_user: root
-      publish:
-        output: <% task(osd_firewall).result %>
       on-success: ceph_install
     ceph_install:
       action: ansible-playbook
       input:
+        inventory:
+          mons:
+            hosts:
+              "{% for ip in env().service_ips.ceph_mon_ctlplane_node_ips %}{{ ip }}{% endfor %}"
+          osds:
+            hosts:
+              "{% for ip in env().service_ips.ceph_osd_ctlplane_node_ips %}{{ ip }}{% endfor %}"
         playbook: /tmp/ceph-ansible/site.yml.sample
         remote_user: heat-admin
         become: true
         become_user: root
         verbosity: 0
-        # skip_tags: package-install
         extra_vars: {"ceph_mon_docker_interface":"<% $.ceph_mon_docker_interface %>", "ceph_mon_docker_subnet":"<% $.ceph_mon_docker_subnet %>", "public_network":"<% $.public_network %>", "monitor_secret":"<% $.monitor_secret %>", "rgw_containerized_deployment":<% $.rgw_containerized_deployment %>, "ceph_rgw_civetweb_port":<% $.ceph_rgw_civetweb_port %>, "ceph_docker_image_tag":"<% $.ceph_docker_image_tag %>", "osd_containerized_deployment":<% $.osd_containerized_deployment %>, "cluster":"<% $.cluster %>", "mds_containerized_deployment":<% $.mds_containerized_deployment %>, "ceph_osd_docker_devices":<% $.ceph_osd_docker_devices %>, "devices":<% $.devices %>, "mon_containerized_deployment":<% $.mon_containerized_deployment %>, "journal_collocation":<% $.journal_collocation %>, "ceph_docker_on_openstack":<% $.ceph_docker_on_openstack %>, "docker":<% $.docker %>, "cluster_network":"<% $.cluster_network %>", "fsid":"<% $.fsid %>", "journal_size":<% $.journal_size %>}
       publish:
         output: <% task(ceph_install).result %>
