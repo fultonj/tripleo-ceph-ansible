@@ -16,5 +16,6 @@
     "cluster_network": "192.168.24.0/24",
     "journal_collocation": true,
     "ceph_rgw_civetweb_port": 8080,
-    "ceph_osd_docker_devices": ["/dev/vdb", "/dev/vdc"]
+    "ceph_osd_docker_devices": ["/dev/vdb", "/dev/vdc"],
+    "devices": ["/dev/vdb", "/dev/vdc"]
 }
