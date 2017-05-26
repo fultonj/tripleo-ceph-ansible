@@ -1,40 +1,29 @@
 ---
 version: '2.0'
 
-mistral-ceph-ansible:
+mistral-ceph-ansible-containers:
   type: direct
-  input: # i generated this w/ python, will make extensible later
-    - monitor_secret
-    #- openstack_keys
-    #- ceph_conf_overrides
-    - ip_version
-    - ceph_stable
-    - ceph_stable_key
-    - raw_journal_devices
+  input: 
     - fsid
-    - ceph_stable_repo
-    - openstack_config
-    - devices
-    - public_network
-    - ceph_stable_release
-    - journal_collocation
-    - cluster_network
-    - raw_multi_journal
+    - monitor_secret
+    - docker
+    - ceph_docker_image_tag
+    - mon_containerized_deployment
+    - osd_containerized_deployment
+    - mds_containerized_deployment
+    - rgw_containerized_deployment
+    - cluster
+    - ceph_mon_docker_interface
+    - ceph_mon_docker_subnet
     - journal_size
-    - mons
-    - mdss
-    - osds
-    - rgws
-    - rbd-mirrors
+    - ceph_docker_on_openstack
+    - public_network
+    - cluster_network
+    - journal_collocation
+    - ceph_rgw_civetweb_port
+    - ceph_osd_docker_devices
+    - devices
   tasks:
-    ansible_hosts_update:
-      action: std.ssh
-      input:
-        cmd: /home/stack/tripleo-ceph-ansible/ansible-inventory.sh
-        host: localhost
-        username: stack
-        password: stack
-      on-success: ansible_playbooks_copy
     ansible_playbooks_copy:
       action: std.ssh
       input:
@@ -42,41 +31,22 @@ mistral-ceph-ansible:
         host: localhost
         username: stack
         password: stack
-      on-success: mon_firewall
-    mon_firewall: # this needs to be done in heat/puppet instead
-      action: ansible
-      input:
-        hosts: 'mons'
-        module: iptables
-        module_args: 'chain=INPUT protocol=tcp destination_port=6789 jump=ACCEPT'
-        remote_user: heat-admin
-        become: true
-        become_user: root
-      publish:
-        output: <% task(mon_firewall).result %>
-      on-success: osd_firewall
-    osd_firewall: # this needs to be done in heat/puppet instead
-      action: ansible
-      input:
-        hosts: 'osds'
-        module: iptables
-        module_args: 'chain=INPUT protocol=tcp destination_port=6800:7300 jump=ACCEPT'
-        remote_user: heat-admin
-        become: true
-        become_user: root
-      publish:
-        output: <% task(osd_firewall).result %>
       on-success: ceph_install
     ceph_install:
       action: ansible-playbook
       input:
+        inventory:
+          mons:
+            hosts:
+              "{% for ip in env().service_ips.ceph_mon_ctlplane_node_ips %}{{ ip }}{% endfor %}"
+          osds:
+            hosts:
+              "{% for ip in env().service_ips.ceph_osd_ctlplane_node_ips %}{{ ip }}{% endfor %}"
         playbook: /tmp/ceph-ansible/site.yml.sample
         remote_user: heat-admin
         become: true
         become_user: root
         verbosity: 0
-        # skip_tags: package-install
-        # i generated this w/ python, will make extensible later
-        extra_vars: {"monitor_secret":"<% $.monitor_secret %>", "ip_version":"<% $.ip_version %>", "journal_size": <% $.journal_size %>, "ceph_stable": <% $.ceph_stable %>, "ceph_stable_key":"<% $.ceph_stable_key %>", "raw_journal_devices": <% $.raw_journal_devices %>, "fsid":"<% $.fsid %>", "ceph_stable_repo":"<% $.ceph_stable_repo %>", "openstack_config":"<% $.openstack_config %>", "devices":"<% $.devices %>", "public_network":"<% $.public_network %>", "ceph_stable_release":"<% $.ceph_stable_release %>", "journal_collocation": <% $.journal_collocation %>, "cluster_network":"<% $.cluster_network %>", "raw_multi_journal": <% $.raw_multi_journal %>, "monitor_interface":"br-ex"}
+        extra_vars: {"ceph_mon_docker_interface":"<% $.ceph_mon_docker_interface %>", "ceph_mon_docker_subnet":"<% $.ceph_mon_docker_subnet %>", "public_network":"<% $.public_network %>", "monitor_secret":"<% $.monitor_secret %>", "rgw_containerized_deployment":<% $.rgw_containerized_deployment %>, "ceph_rgw_civetweb_port":<% $.ceph_rgw_civetweb_port %>, "ceph_docker_image_tag":"<% $.ceph_docker_image_tag %>", "osd_containerized_deployment":<% $.osd_containerized_deployment %>, "cluster":"<% $.cluster %>", "mds_containerized_deployment":<% $.mds_containerized_deployment %>, "ceph_osd_docker_devices":<% $.ceph_osd_docker_devices %>, "devices":<% $.devices %>, "mon_containerized_deployment":<% $.mon_containerized_deployment %>, "journal_collocation":<% $.journal_collocation %>, "ceph_docker_on_openstack":<% $.ceph_docker_on_openstack %>, "docker":<% $.docker %>, "cluster_network":"<% $.cluster_network %>", "fsid":"<% $.fsid %>", "journal_size":<% $.journal_size %>}
       publish:
         output: <% task(ceph_install).result %>
