@@ -1,53 +1,56 @@
 ---
 version: '2.0'
+name: tripleo.ceph-ansible.v1
+description: TripleO manages Ceph with ceph-ansible
 
-mistral-ceph-ansible:
-  type: direct
-  input: 
-    - fsid
-    - monitor_secret
-    - docker
-    - ceph_docker_image_tag
-    - mon_containerized_deployment
-    - osd_containerized_deployment
-    - mds_containerized_deployment
-    - rgw_containerized_deployment
-    - cluster
-    - ceph_mon_docker_interface
-    - ceph_mon_docker_subnet
-    - journal_size
-    - ceph_docker_on_openstack
-    - public_network
-    - cluster_network
-    - journal_collocation
-    - ceph_rgw_civetweb_port
-    - ceph_osd_docker_devices
-    - devices
-  tasks:
-    ceph_install:
-      action: ansible-playbook
-      input:
-        inventory:
-          mons:
-            hosts:
-              "{% for ip in env().get('service_ips', {}).get('ceph_mon_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
-          osds:
-            hosts:
-              "{% for ip in env().get('service_ips', {}).get('ceph_osd_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
-          mdss:
-            hosts:
-              "{% for ip in env().get('service_ips', {}).get('ceph_mds_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
-          rbdmirrors:
-            hosts:
-              "{% for ip in env().get('service_ips', {}).get('ceph_rbdmirror_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
-          rgwss:
-            hosts:
-              "{% for ip in env().get('service_ips', {}).get('ceph_rgws_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
-        playbook: /usr/share/ceph-ansible/site.yml.sample
-        remote_user: heat-admin
-        become: true
-        become_user: root
-        verbosity: 0
-        extra_vars: {"fetch_directory":"/tmp/ceph-ansible-fetch/", "ceph_mon_docker_interface":"<% $.ceph_mon_docker_interface %>", "ceph_mon_docker_subnet":"<% $.ceph_mon_docker_subnet %>", "public_network":"<% $.public_network %>", "monitor_secret":"<% $.monitor_secret %>", "rgw_containerized_deployment":<% $.rgw_containerized_deployment %>, "ceph_rgw_civetweb_port":<% $.ceph_rgw_civetweb_port %>, "ceph_docker_image_tag":"<% $.ceph_docker_image_tag %>", "osd_containerized_deployment":<% $.osd_containerized_deployment %>, "cluster":"<% $.cluster %>", "mds_containerized_deployment":<% $.mds_containerized_deployment %>, "ceph_osd_docker_devices":<% $.ceph_osd_docker_devices %>, "devices":<% $.devices %>, "mon_containerized_deployment":<% $.mon_containerized_deployment %>, "journal_collocation":<% $.journal_collocation %>, "ceph_docker_on_openstack":<% $.ceph_docker_on_openstack %>, "docker":<% $.docker %>, "cluster_network":"<% $.cluster_network %>", "fsid":"<% $.fsid %>", "journal_size":<% $.journal_size %>}
-      publish:
-        output: <% task(ceph_install).result %>
+workflows:
+  ceph-install:
+    type: direct
+    input: 
+      - fsid
+      - monitor_secret
+      - docker
+      - ceph_docker_image_tag
+      - mon_containerized_deployment
+      - osd_containerized_deployment
+      - mds_containerized_deployment
+      - rgw_containerized_deployment
+      - cluster
+      - ceph_mon_docker_interface
+      - ceph_mon_docker_subnet
+      - journal_size
+      - ceph_docker_on_openstack
+      - public_network
+      - cluster_network
+      - journal_collocation
+      - ceph_rgw_civetweb_port
+      - ceph_osd_docker_devices
+      - devices
+    tasks:
+      ceph_install:
+        action: ansible-playbook
+        input:
+          inventory:
+            mons:
+              hosts:
+                "{% for ip in env().get('service_ips', {}).get('ceph_mon_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
+            osds:
+              hosts:
+                "{% for ip in env().get('service_ips', {}).get('ceph_osd_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
+            mdss:
+              hosts:
+                "{% for ip in env().get('service_ips', {}).get('ceph_mds_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
+            rbdmirrors:
+              hosts:
+                "{% for ip in env().get('service_ips', {}).get('ceph_rbdmirror_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
+            rgws:
+              hosts:
+                "{% for ip in env().get('service_ips', {}).get('ceph_rgws_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
+          playbook: /usr/share/ceph-ansible/site.yml.sample
+          remote_user: heat-admin
+          become: true
+          become_user: root
+          verbosity: 0
+          extra_vars: {"fetch_directory":"/tmp/ceph-ansible-fetch/", "ceph_mon_docker_interface":"<% $.ceph_mon_docker_interface %>", "ceph_mon_docker_subnet":"<% $.ceph_mon_docker_subnet %>", "public_network":"<% $.public_network %>", "monitor_secret":"<% $.monitor_secret %>", "rgw_containerized_deployment":<% $.rgw_containerized_deployment %>, "ceph_rgw_civetweb_port":<% $.ceph_rgw_civetweb_port %>, "ceph_docker_image_tag":"<% $.ceph_docker_image_tag %>", "osd_containerized_deployment":<% $.osd_containerized_deployment %>, "cluster":"<% $.cluster %>", "mds_containerized_deployment":<% $.mds_containerized_deployment %>, "ceph_osd_docker_devices":<% $.ceph_osd_docker_devices %>, "devices":<% $.devices %>, "mon_containerized_deployment":<% $.mon_containerized_deployment %>, "journal_collocation":<% $.journal_collocation %>, "ceph_docker_on_openstack":<% $.ceph_docker_on_openstack %>, "docker":<% $.docker %>, "cluster_network":"<% $.cluster_network %>", "fsid":"<% $.fsid %>", "journal_size":<% $.journal_size %>}
+        publish:
+          output: <% task(ceph_install).result %>
