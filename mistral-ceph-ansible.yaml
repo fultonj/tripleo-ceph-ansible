@@ -34,6 +34,15 @@ mistral-ceph-ansible:
           osds:
             hosts:
               "{% for ip in env().get('service_ips', {}).get('ceph_osd_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
+          mdss:
+            hosts:
+              "{% for ip in env().get('service_ips', {}).get('ceph_mds_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
+          rbdmirrors:
+            hosts:
+              "{% for ip in env().get('service_ips', {}).get('ceph_rbdmirror_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
+          rgwss:
+            hosts:
+              "{% for ip in env().get('service_ips', {}).get('ceph_rgws_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
         playbook: /usr/share/ceph-ansible/site.yml.sample
         remote_user: heat-admin
         become: true
