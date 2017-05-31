@@ -64,9 +64,6 @@ if [ $MISTRAL -eq 1 ]; then
 	    sudo sh -c "echo \"mistral ALL=(root) NOPASSWD:ALL\" | tee -a /etc/sudoers.d/mistral "
 	    sudo chmod 0440 /etc/sudoers.d/mistral
 	fi
-	# set stack user password so mistral can SSH in (for now)
-	sudo usermod --password $(echo stack | openssl passwd -1 -stdin) stack
-	
 	# I think this can go, but want to test first
 	if [ ! -d /home/mistral ]; then
 	    sudo mkdir /home/mistral
@@ -98,6 +95,9 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 
     echo "Updating /etc/ansible/ansible.cfg action_plugins=/usr/share/ceph-ansible/plugins"
     sudo sed -i -e s/\#action_plugins.*/action_plugins\ \=\ \\/usr\\/share\\/ceph-ansible\\/plugins\\/actions/g /etc/ansible/ansible.cfg
+
+    echo "Disable retry files given permissions issue with /usr/share (for now)"
+    sudo sed -i s/\#retry_files_enabled\ =\ False/retry_files_enabled\ =\ False/g /etc/ansible/ansible.cfg
 fi
 
 if [ $HEAT -eq 1 ]; then
