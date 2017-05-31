@@ -30,10 +30,10 @@ mistral-ceph-ansible:
         inventory:
           mons:
             hosts:
-              "{% for ip in env().service_ips.ceph_mon_ctlplane_node_ips %}{{ ip }}{% endfor %}"
+              "{% for ip in env().get('service_ips', {}).get('ceph_mon_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
           osds:
             hosts:
-              "{% for ip in env().service_ips.ceph_osd_ctlplane_node_ips %}{{ ip }}{% endfor %}"
+              "{% for ip in env().get('service_ips', {}).get('ceph_osd_ctlplane_node_ips', []) %}{{ ip }}{% endfor %}"
         playbook: /usr/share/ceph-ansible/site.yml.sample
         remote_user: heat-admin
         become: true
