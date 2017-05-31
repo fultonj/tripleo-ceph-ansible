@@ -2,12 +2,11 @@
 
 source ~/stackrc
 
-WORKFLOW='mistral-ceph-ansible'
-EXISTS=$(mistral workflow-list | grep $WORKFLOW | wc -l)
+EXISTS=$(mistral workbook-list | grep tripleo.ceph-ansible.v1 | wc -l)
 if [[ $EXISTS -gt 0 ]]; then
-    mistral workflow-update /home/stack/tripleo-ceph-ansible/$WORKFLOW.yaml
+    mistral workbook-update /home/stack/tripleo-ceph-ansible/ceph-ansible.yaml
 else
-    mistral workflow-create /home/stack/tripleo-ceph-ansible/$WORKFLOW.yaml    
+    mistral workbook-create /home/stack/tripleo-ceph-ansible/ceph-ansible.yaml
 fi
 
 time openstack overcloud deploy --templates ~/templates \
