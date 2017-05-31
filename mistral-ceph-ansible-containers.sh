@@ -5,7 +5,8 @@
 # -------------------------------------------------------
 PREP=0
 RUN=1
-WORKFLOW='mistral-ceph-ansible-containers'
+WORKBOOK='mistral-ceph-ansible'
+WORKFLOW='tripleo.ceph-ansible.v1.ceph-install'
 # -------------------------------------------------------
 if [[ $PREP -eq 1 ]]; then
     echo "Zapping Disks" # requires inventory
@@ -20,18 +21,21 @@ if [[ $RUN -eq 1 ]]; then
     source ~/stackrc
     EXISTS=$(mistral workflow-list | grep $WORKFLOW | wc -l)
     if [[ $EXISTS -gt 0 ]]; then
-	mistral workflow-update $WORKFLOW.yaml
+	mistral workbook-update $WORKBOOK.yaml
     else
-	mistral workflow-create $WORKFLOW.yaml    
+	mistral workbook-create $WORKBOOK.yaml    
     fi
+    mistral workflow-list | grep $WORKFLOW
     mistral execution-create $WORKFLOW ceph-ansible-input-containers.json
-    UUID=$(mistral execution-list | grep $WORKFLOW | awk {'print $2'} | tail -1)
-    mistral execution-get $UUID
-    echo "Getting output for the following tasks in workflow $WORKFLOW"
-    mistral task-list $UUID
-    for TASK_ID in $(mistral task-list $UUID | awk {'print $2'} | egrep -v 'ID|^$'); do
-	mistral task-get-result $TASK_ID | jq . | sed -e 's/\\n/\n/g' -e 's/\\"/"/g'
-    done
+    mistral execution-list | grep ceph
+
+    ##UUID=$(mistral execution-list | grep $WORKFLOW | awk {'print $2'} | tail -1)
+    ##mistral execution-get $UUID
+    #echo "Getting output for the following tasks in workflow $WORKFLOW"
+    #mistral task-list $UUID
+    #for TASK_ID in $(mistral task-list $UUID | awk {'print $2'} | egrep -v 'ID|^$'); do
+   # 	mistral task-get-result $TASK_ID | jq . | sed -e 's/\\n/\n/g' -e 's/\\"/"/g'
+    # done
 
     # to make following up easier:
     echo "UUID: $UUID"
