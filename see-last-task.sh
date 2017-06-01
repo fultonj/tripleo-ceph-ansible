@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 source ~/stackrc
-WORKFLOW='tripleo.ceph-ansible.v1.ceph-install'
+WORKFLOW='tripleo.storage.v1.ceph-install'
 UUID=$(mistral execution-list | grep $WORKFLOW | awk {'print $2'} | tail -1)
 if [ -z $UUID ]; then
     echo "Error: unable to find UUID. Exixting."

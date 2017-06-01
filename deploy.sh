@@ -2,11 +2,17 @@
 
 source ~/stackrc
 
-EXISTS=$(mistral workbook-list | grep tripleo.ceph-ansible.v1 | wc -l)
+WORKBOOK=/home/stack/tripleo-common/workbooks/ceph-ansible.yaml
+if [[ ! -e $WORKBOOK ]]; then
+    echo "$WORKBOOK does not exist (see init.sh)"
+    exit 1
+fi
+
+EXISTS=$(mistral workbook-list | grep tripleo.storage.v1 | wc -l)
 if [[ $EXISTS -gt 0 ]]; then
-    mistral workbook-update /home/stack/tripleo-ceph-ansible/ceph-ansible.yaml
+    mistral workbook-update $WORKBOOK
 else
-    mistral workbook-create /home/stack/tripleo-ceph-ansible/ceph-ansible.yaml
+    mistral workbook-create $WORKBOOK
 fi
 
 time openstack overcloud deploy --templates ~/templates \

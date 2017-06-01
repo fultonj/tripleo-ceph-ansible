@@ -1,19 +1,21 @@
 #!/usr/bin/env bash
 
-DNS=1
+DNS=0
 
-IRONIC=1
+IRONIC=0
 
-MISTRAL=1
-MISTRAL_MASTER=1
-MISTRAL_PRIV=1
+MISTRAL=0
+MISTRAL_MASTER=0
+MISTRAL_PRIV=0
 
-CEPH_ANSIBLE=1
+CEPH_ANSIBLE=0
 CEPH_ANSIBLE_MASTER=0 
 
-HEAT=1
+HEAT=0
 
-THT=1
+THT=0
+
+WORKBOOK=1
 
 source ~/stackrc
 
@@ -113,7 +115,7 @@ if [ $HEAT -eq 1 ]; then
 fi
 
 
-if [ $THT -gt 0 ]; then
+if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
     if [ ! -d  $dir ]; then
 	# https://github.com/fultonj/oooq/blob/master/setup-deploy-artifacts.sh
@@ -135,4 +137,23 @@ if [ $THT -gt 0 ]; then
     git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/6 && git checkout FETCH_HEAD
     git checkout -b bp/tripleo-ceph-ansible
     popd 
+fi
+
+if [ $WORKBOOK -eq 1 ]; then
+    dir=/home/stack/tripleo-common
+    if [ ! -d  $dir ]; then
+	# https://github.com/fultonj/oooq/blob/master/setup-deploy-artifacts.sh
+	echo "$dir is missing; please git clone it from review.openstack.org"
+	exit 1
+    fi
+    if [[ $(ssh-add -l | wc -l) -eq 0 ]]; then
+	# did they forward their SSH key?
+	echo "No SSH agent with keys present. Will not be able to connect to git."
+	exit 1
+    fi
+    echo "Patching ~/tripleo-common with newer unmerged changes from the following:"
+    echo "- https://review.openstack.org/#/c/469644"
+    pushd $dir
+    git review -d 469644
+    popd
 fi
