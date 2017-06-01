@@ -5,8 +5,8 @@
 # -------------------------------------------------------
 PREP=0
 RUN=1
-WORKBOOK='mistral-ceph-ansible'
-WORKFLOW='tripleo.ceph-ansible.v1.ceph-install'
+WORKBOOK=/home/stack/tripleo-common/workbooks/ceph-ansible.yaml
+WORKFLOW='tripleo.storage.v1.ceph-install'
 # -------------------------------------------------------
 if [[ $PREP -eq 1 ]]; then
     echo "Zapping Disks" # requires inventory
@@ -14,19 +14,23 @@ if [[ $PREP -eq 1 ]]; then
 fi
 # -------------------------------------------------------
 if [[ $RUN -eq 1 ]]; then
-    if [[ ! -f ceph-ansible-input-containers.json ]]; then
+    if [[ ! -f ceph-ansible-input.json ]]; then
 	echo "Error: ceph-ansible-input-containers.json is not in `pwd`"
 	exit 1
     fi
+    if [[ ! -e $WORKBOOK ]]; then
+	echo "$WORKBOOK does not exist (see init.sh)"
+	exit 1
+    fi
     source ~/stackrc
-    EXISTS=$(mistral workflow-list | grep $WORKFLOW | wc -l)
+    EXISTS=$(mistral workbook-list | grep tripleo.storage.v1 | wc -l)
     if [[ $EXISTS -gt 0 ]]; then
-	mistral workbook-update $WORKBOOK.yaml
+	mistral workbook-update $WORKBOOK
     else
-	mistral workbook-create $WORKBOOK.yaml    
+	mistral workbook-create $WORKBOOK
     fi
     mistral workflow-list | grep $WORKFLOW
-    mistral execution-create $WORKFLOW ceph-ansible-input-containers.json
+    mistral execution-create $WORKFLOW ceph-ansible-input.json
     mistral execution-list | grep ceph
 
     ##UUID=$(mistral execution-list | grep $WORKFLOW | awk {'print $2'} | tail -1)
