@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
-DNS=0
+DNS=1
 
-IRONIC=0
+IRONIC=1
 
-MISTRAL=0
-MISTRAL_MASTER=0
-MISTRAL_PRIV=0
+MISTRAL=1
+MISTRAL_MASTER=1
+MISTRAL_PRIV=0    # this hack should no longer be needed
 
-CEPH_ANSIBLE=0
+CEPH_ANSIBLE=1
 CEPH_ANSIBLE_MASTER=0 
 
-HEAT=0
+HEAT=1
 
-THT=0
+THT=1
 
 WORKBOOK=1
 
@@ -34,6 +34,7 @@ if [ $IRONIC -eq 1 ]; then
 fi
 
 if [ $MISTRAL -eq 1 ]; then
+    # this should be updated to pull from https://review.openstack.org/#/c/470021/
     echo "Installing Mistral Ansbile actions from out of tree"
     # https://github.com/d0ugal/mistral-ansible-actions
     if [ $MISTRAL_MASTER -eq 1 ]; then
@@ -43,15 +44,15 @@ if [ $MISTRAL -eq 1 ]; then
 	# git clone https://github.com/d0ugal/mistral-ansible-actions.git	
 	sudo rm -Rf /usr/lib/python2.7/site-packages/mistral_ansible*
 	pushd mistral-ansible-actions
-	# be less verbose...
-	# https://github.com/d0ugal/mistral-ansible-actions/blob/master/mistral_ansible_actions.py#L110
 	sudo python setup.py install
 	popd
     else
 	sudo yum install -y python-pip
 	sudo pip install mistral-ansible-actions;
-    fi    
+    fi
     sudo mistral-db-manage populate;
+    # apply fix for https://review.openstack.org/#/c/462917
+    sudo sed -i s/workflow2/workflowv2/g /usr/lib/python2.7/site-packages/mistralclient/auth/keystone.py 
     sudo systemctl restart openstack-mistral*;
     mistral action-list | grep ansible
     echo "Try these:"
