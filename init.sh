@@ -16,6 +16,7 @@ HEAT=1
 THT=1
 
 WORKBOOK=1
+PRIKEY=1    # only works in WORKBOOK=1
 
 source ~/stackrc
 
@@ -157,4 +158,19 @@ if [ $WORKBOOK -eq 1 ]; then
     pushd $dir
     git review -d 469644
     popd
+    if [ $PRIKEY -eq 1 ]; then
+	echo "Adding new mistral action get_private_key from updated tripleo_common"
+	sudo diff -u /usr/lib/python2.7/site-packages/tripleo_common/actions/validations.py /home/stack/tripleo-common/tripleo_common/actions/validations.py 
+	grep GetPrikeyAction /home/stack/tripleo-common/setup.cfg
+	sudo rm -Rf /usr/lib/python2.7/site-packages/tripleo_common*
+	pushd $dir
+	sudo python setup.py install
+	sudo cp /usr/share/tripleo-common/sudoers /etc/sudoers.d/tripleo-common
+	sudo systemctl restart openstack-mistral-executor
+	sudo systemctl restart openstack-mistral-engine
+	sudo mistral-db-manage populate
+	popd
+	mistral action-list | grep tripleo.validations.get_
+    fi
 fi
+
