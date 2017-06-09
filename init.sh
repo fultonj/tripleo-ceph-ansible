@@ -1,22 +1,21 @@
 #!/usr/bin/env bash
 
-DNS=1
+DNS=0
 
-IRONIC=1
+IRONIC=0
 
 MISTRAL=1
-MISTRAL_MASTER=1
-MISTRAL_PRIV=0    # this hack should no longer be needed
+MISTRAL_FORK=1
 
-CEPH_ANSIBLE=1
+CEPH_ANSIBLE=0
 CEPH_ANSIBLE_MASTER=0 
 
-HEAT=1
+HEAT=0
 
-THT=1
+THT=0
 
-WORKBOOK=1
-PRIKEY=1    # only works in WORKBOOK=1
+WORKBOOK=0
+PRIKEY=0    # only works in WORKBOOK=1
 
 source ~/stackrc
 
@@ -38,7 +37,7 @@ if [ $MISTRAL -eq 1 ]; then
     # this should be updated to pull from https://review.openstack.org/#/c/470021/
     echo "Installing Mistral Ansbile actions from out of tree"
     # https://github.com/d0ugal/mistral-ansible-actions
-    if [ $MISTRAL_MASTER -eq 1 ]; then
+    if [ $MISTRAL_FORK -eq 1 ]; then
 	# pull from git instead of pip
 	sudo rm -rf mistral-ansible-actions/
 	git clone https://github.com/fultonj/mistral-ansible-actions.git
@@ -52,30 +51,13 @@ if [ $MISTRAL -eq 1 ]; then
 	sudo pip install mistral-ansible-actions;
     fi
     sudo mistral-db-manage populate;
-    # apply fix for https://review.openstack.org/#/c/462917
-    sudo sed -i s/workflow2/workflowv2/g /usr/lib/python2.7/site-packages/mistralclient/auth/keystone.py 
+    # apply fix for https://review.openstack.org/#/c/462917 (not necessary with new action)
+    #sudo sed -i s/workflow2/workflowv2/g /usr/lib/python2.7/site-packages/mistralclient/auth/keystone.py 
     sudo systemctl restart openstack-mistral*;
     mistral action-list | grep ansible
     echo "Try these:"
     echo "  mistral action-get ansible"
     echo "  mistral action-get ansible-playbook"
-    
-    if [ $MISTRAL_PRIV -eq 1 ]; then
-	# use this workaround for now
-	id mistral
-	if [ ! -f /etc/sudoers.d/mistral ]; then
-	    # escalate mistral users privs so he can run inventory script (for now)
-	    sudo sh -c "echo \"mistral ALL=(root) NOPASSWD:ALL\" | tee -a /etc/sudoers.d/mistral "
-	    sudo chmod 0440 /etc/sudoers.d/mistral
-	fi
-	# I think this can go, but want to test first
-	if [ ! -d /home/mistral ]; then
-	    sudo mkdir /home/mistral
-	fi
-	sudo chown mistral:mistral /home/mistral/
-	sudo cp -r ~/.ssh/ /home/mistral/
-	sudo chown -R mistral:mistral /home/mistral/.ssh/
-    fi
 fi
 
 if [ $CEPH_ANSIBLE -eq 1 ]; then
