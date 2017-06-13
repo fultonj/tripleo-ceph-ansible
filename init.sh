@@ -1,21 +1,19 @@
 #!/usr/bin/env bash
 
-DNS=0
+DNS=1
 
-IRONIC=0
+IRONIC=1
 
 MISTRAL=1
 MISTRAL_FORK=1
 
-CEPH_ANSIBLE=0
+CEPH_ANSIBLE=1
 CEPH_ANSIBLE_MASTER=0 
 
-HEAT=0
+THT=1
 
-THT=0
-
-WORKBOOK=0
-PRIKEY=0    # only works in WORKBOOK=1
+WORKBOOK=1
+PRIKEY=1    # only works in WORKBOOK=1
 
 source ~/stackrc
 
@@ -85,19 +83,6 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     echo "Disable retry files given permissions issue with /usr/share (for now)"
     sudo sed -i s/\#retry_files_enabled\ =\ False/retry_files_enabled\ =\ False/g /etc/ansible/ansible.cfg
 fi
-
-if [ $HEAT -eq 1 ]; then
-    # these have merged so this won't be necessary much longer
-    echo "Installing Heat Updates: "
-    echo " - https://review.openstack.org/#/c/420664/"
-    # heat/engine/resources/openstack/mistral/external_resource.py
-    echo " - https://review.openstack.org/#/c/463297/"
-    # heat/engine/resources/openstack/mistral/workflow.py
-    sudo cp heat/*.py /usr/lib/python2.7/site-packages/heat/engine/resources/openstack/mistral/
-    sudo systemctl restart openstack-heat-engine
-    openstack orchestration resource type show --template-type hot OS::Mistral::ExternalResource
-fi
-
 
 if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
