@@ -1,0 +1,101 @@
+heat_template_version: pike
+
+description: >
+  Ceph Monitor service.
+
+parameters:
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+  CephIPv6:
+    default: False
+    type: boolean
+  CephMonKey:
+    description: The Ceph monitors key. Can be created with ceph-authtool --gen-print-key.
+    type: string
+    hidden: true
+  CinderRbdPoolName:
+    default: volumes
+    type: string
+  ManilaCephFSDataPoolName:
+    default: manila_data
+    type: string
+  ManilaCephFSMetadataPoolName:
+    default: manila_metadata
+    type: string
+  CinderBackupRbdPoolName:
+    default: backups
+    type: string
+  GlanceRbdPoolName:
+    default: images
+    type: string
+  GnocchiRbdPoolName:
+    default: metrics
+    type: string
+  NovaRbdPoolName:
+    default: vms
+    type: string
+  CephPools:
+    description: >
+      It can be used to override settings for one of the predefined pools, or to create
+      additional ones. Example:
+      {
+        "volumes": {
+          "size": 5,
+          "pg_num": 128,
+          "pgp_num": 128
+         }
+      }
+    default: {}
+    type: json
+  CephValidationRetries:
+    type: number
+    default: 5
+    description: Number of retry attempts for Ceph validation
+  CephValidationDelay:
+    type: number
+    default: 10
+    description: Interval (in seconds) in between validation checks
+  MonitoringSubscriptionCephMon:
+    default: 'overcloud-ceph-mon'
+    type: string
+  CephPoolDefaultSize:
+    description: default minimum replication for RBD copies
+    type: number
+    default: 3
+
+resources:
+  CephBase:
+    type: ./ceph-base.yaml
+
+outputs:
+  role_data:
+    description: Role data for the Ceph Monitor service.
+    value:
+      service_name: ceph_mon
+      monitoring_subscription: {get_param: MonitoringSubscriptionCephMon}
+      config_settings:
+        tripleo.ceph_mon.firewall_rules:
+          '110 ceph_mon':
+            dport:
+              - 6789
+      service_workflow_tasks: {get_attr: [CephBase, role_data, service_workflow_tasks]}

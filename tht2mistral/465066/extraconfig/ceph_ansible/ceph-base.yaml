@@ -1,0 +1,97 @@
+heat_template_version: pike
+
+description: >
+  Ceph base service. Shared by all Ceph services.
+
+parameters:
+  CephAdminKey:
+    description: The Ceph admin client key. Can be created with ceph-authtool --gen-print-key.
+    type: string
+    hidden: true
+  CephClientKey:
+    description: The Ceph client key. Can be created with ceph-authtool --gen-print-key. Currently only used for external Ceph deployments to create the openstack user keyring.
+    type: string
+    hidden: true
+  CephClientUserName:
+    default: openstack
+    type: string
+  CephClusterFSID:
+    type: string
+    description: The Ceph cluster FSID. Must be a UUID.
+  CephMonKey:
+    description: The Ceph monitors key. Can be created with ceph-authtool --gen-print-key.
+    type: string
+    hidden: true
+  CinderRbdPoolName:
+    default: volumes
+    type: string
+  CinderBackupRbdPoolName:
+    default: backups
+    type: string
+  GlanceRbdPoolName:
+    default: images
+    type: string
+  GnocchiRbdPoolName:
+    default: metrics
+    type: string
+  NovaRbdPoolName:
+    default: vms
+    type: string
+  CephAnsibleDeployWorkflowName:
+    type: string
+    description: Name of the Mistral workflow deploying Ceph
+    default: mistral-ceph-ansible
+  ServiceNetMap:
+    default: {}
+    description: Mapping of service_name -> network name. Typically set
+                 via parameter_defaults in the resource registry.  This
+                 mapping overrides those in ServiceNetMapDefaults.
+    type: json
+  DefaultPasswords:
+    default: {}
+    type: json
+  RoleName:
+    default: ''
+    description: Role name on which the service is applied
+    type: string
+  RoleParameters:
+    default: {}
+    description: Parameters specific to the role
+    type: json
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+
+outputs:
+  role_data:
+    description: Role data for the Ceph base service.
+    value:
+      service_name: ceph_base
+      service_workflow_tasks:
+        step2:
+          - name: ceph_base_ansible_workflow
+            workflow: { get_param: CephAnsibleDeployWorkflowName }
+            input:
+              fsid: { get_param: CephClusterFSID }
+              monitor_secret: { get_param: CephMonKey }
+              docker: true
+              ceph_docker_image_tag: tag-build-master-jewel-centos-7
+              mon_containerized_deployment: true
+              osd_containerized_deployment: true
+              mds_containerized_deployment: false
+              rgw_containerized_deployment: false
+              cluster: ceph
+              ceph_mon_docker_interface: br_ex
+              ceph_mon_docker_subnet: 192.168.24.0/24
+              journal_size: 256
+              ceph_docker_on_openstack: false
+              public_network: 192.168.24.0/24
+              cluster_network: 192.168.24.0/24
+              journal_collocation: true
+              ceph_rgw_civetweb_port: 8080
+              ceph_osd_docker_devices: &devices
+                - /dev/vdb
+                - /dev/vdc
+              devices: *devices

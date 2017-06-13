@@ -1,0 +1,379 @@
+# certain initialization steps (run in a container) will occur
+# on the role marked as primary controller or the first role listed
+{%- set primary_role = [roles[0]] -%}
+{%- for role in roles -%}
+  {%- if 'primary' in role.tags and 'controller' in role.tags -%}
+    {%- set _ = primary_role.pop() -%}
+    {%- set _ = primary_role.append(role) -%}
+  {%- endif -%}
+{%- endfor -%}
+{%- set primary_role_name = primary_role[0].name -%}
+# primary role is: {{primary_role_name}}
+{% set deploy_steps_max = 6 -%}
+
+heat_template_version: pike
+
+description: >
+  Post-deploy configuration steps via puppet for all roles,
+  as defined in ../roles_data.yaml
+
+parameters:
+  servers:
+    type: json
+    description: Mapping of Role name e.g Controller to a list of servers
+  stack_name:
+    type: string
+    description: Name of the topmost stack
+  role_data:
+    type: json
+    description: Mapping of Role name e.g Controller to the per-role data
+  DeployIdentifier:
+    default: ''
+    type: string
+    description: >
+      Setting this to a unique value will re-run any deployment tasks which
+      perform configuration on a Heat stack-update.
+  EndpointMap:
+    default: {}
+    description: Mapping of service endpoint -> protocol. Typically set
+                 via parameter_defaults in the resource registry.
+    type: json
+
+conditions:
+{% for step in range(1, 6) %}
+  WorkflowTasks_Step{{step}}_Enabled:
+    or:
+    {% for role in roles %}
+      - not:
+          equals:
+            - get_param: [role_data, {{role.name}}, service_workflow_tasks, step{{step}}]
+            - ''
+    {% endfor %}
+{% endfor %}
+
+resources:
+
+  # These utility tasks use docker-puppet.py to execute tasks via puppet
+  # We only execute these on the first node in the primary role
+  {{primary_role_name}}DockerPuppetTasks:
+    type: OS::Heat::Value
+    properties:
+      type: json
+      value:
+        yaql:
+          expression:
+            $.data.default_tasks + dict($.data.docker_puppet_tasks.where($1 != null).selectMany($.items()).groupBy($[0], $[1]))
+          data:
+            docker_puppet_tasks: {get_param: [role_data, {{primary_role_name}}, docker_puppet_tasks]}
+            default_tasks:
+{%- for step in range(1, deploy_steps_max) %}
+              step_{{step}}: {}
+{%- endfor %}
+
+# BEGIN primary_role_name docker-puppet-tasks (run only on a single node)
+{% for step in range(1, deploy_steps_max) %}
+
+  {{primary_role_name}}DockerPuppetTasksConfig{{step}}:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config: {get_file: docker-puppet.py}
+      inputs:
+        - name: CONFIG
+        - name: NET_HOST
+        - name: NO_ARCHIVE
+        - name: STEP
+
+  {{primary_role_name}}DockerPuppetTasksDeployment{{step}}:
+    type: OS::Heat::SoftwareDeployment
+    depends_on:
+      {% for dep in roles %}
+      - {{dep.name}}Deployment_Step{{step}}
+      - {{dep.name}}ContainersDeployment_Step{{step}}
+      {% endfor %}
+    properties:
+      name: {{primary_role_name}}DockerPuppetTasksDeployment{{step}}
+      server: {get_param: [servers, {{primary_role_name}}, '0']}
+      config: {get_resource: {{primary_role_name}}DockerPuppetTasksConfig{{step}}}
+      input_values:
+        CONFIG: /var/lib/docker-puppet/docker-puppet-tasks{{step}}.json
+        NET_HOST: 'true'
+        NO_ARCHIVE: 'true'
+        STEP: {{step}}
+# END primary_role_name docker-puppet-tasks
+
+# BEGIN service_workflow_tasks handling
+  WorkflowTasks_Step{{step}}:
+    type: OS::Mistral::Workflow
+    condition: WorkflowTasks_Step{{step}}_Enabled
+    depends_on:
+    {% if step == 1 %}
+    {% for dep in roles %}
+      - {{dep.name}}PreConfig
+      - {{dep.name}}ArtifactsDeploy
+    {% endfor %}
+    {% else %}
+    {% for dep in roles %}
+      - {{dep.name}}Deployment_Step{{step -1}}
+      - {{dep.name}}ContainersDeployment_Step{{step -1}}
+    {% endfor %}
+      - {{primary_role_name}}DockerPuppetTasksDeployment{{step -1}}
+    {% endif %}
+    properties:
+      name: {list_join: [".", ["tripleo", {get_param: stack_name}, "workflowtasks", "step{{step}}"]]}
+      type: direct
+      tasks:
+        yaql:
+          expression: $.data.where($ != '').select($.get('step{{step}}')).where($ != null).flatten()
+          data:
+          {% for role in roles %}
+            - get_param: [role_data, {{role.name}}, service_workflow_tasks]
+          {% endfor %}
+
+  WorkflowTasks_Step{{step}}_Execution:
+    type: OS::Mistral::ExternalResource
+    condition: WorkflowTasks_Step{{step}}_Enabled
+    depends_on: WorkflowTasks_Step{{step}}
+    properties:
+      actions:
+        CREATE:
+          workflow: { get_resource: WorkflowTasks_Step{{step}} }
+        UPDATE:
+          workflow: { get_resource: WorkflowTasks_Step{{step}} }
+      always_update: true
+# END service_workflow_tasks handling
+{% endfor %}
+
+{% for role in roles %}
+  # Post deployment steps for all roles
+  # A single config is re-applied with an incrementing step number
+  # {{role.name}} Role steps
+  {{role.name}}ArtifactsConfig:
+    type: ../puppet/deploy-artifacts.yaml
+
+  {{role.name}}ArtifactsDeploy:
+    type: OS::Heat::StructuredDeploymentGroup
+    properties:
+      servers:  {get_param: [servers, {{role.name}}]}
+      config: {get_resource: {{role.name}}ArtifactsConfig}
+
+  {{role.name}}PreConfig:
+    type: OS::TripleO::Tasks::{{role.name}}PreConfig
+    properties:
+      servers: {get_param: [servers, {{role.name}}]}
+      input_values:
+        update_identifier: {get_param: DeployIdentifier}
+
+  {{role.name}}HostPrepConfig:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ansible
+      options:
+        modulepath: /usr/share/ansible-modules
+      config:
+        str_replace:
+          template: _PLAYBOOK
+          params:
+            _PLAYBOOK:
+              - hosts: localhost
+                connection: local
+                vars:
+                  puppet_config: {get_param: [role_data, {{role.name}}, puppet_config]}
+                  docker_puppet_script: {get_file: docker-puppet.py}
+                  docker_puppet_tasks: {get_attr: [{{primary_role_name}}DockerPuppetTasks, value]}
+                  docker_startup_configs: {get_attr: [{{role.name}}DockerConfig, value]}
+                  kolla_config: {get_param: [role_data, {{role.name}}, kolla_config]}
+                  bootstrap_server_id: {get_param: [servers, {{primary_role_name}}, '0']}
+                tasks:
+                  # Join host_prep_tasks with the other per-host configuration
+                  yaql:
+                    expression: $.data.host_prep_tasks + $.data.template_tasks
+                    data:
+                      host_prep_tasks: {get_param: [role_data, {{role.name}}, host_prep_tasks]}
+                      template_tasks:
+{%- raw %}
+                        # This is where we stack puppet configuration (for now)...
+                        - name: Create /var/lib/config-data
+                          file: path=/var/lib/config-data state=directory
+                        # This is the docker-puppet configs end in
+                        - name: Create /var/lib/docker-puppet
+                          file: path=/var/lib/docker-puppet state=directory
+                        # this creates a JSON config file for our docker-puppet.py script
+                        - name: Write docker-puppet-tasks json files
+                          copy: content="{{puppet_config | to_json}}" dest=/var/lib/docker-puppet/docker-puppet.json force=yes
+                        # FIXME: can we move docker-puppet somewhere so it's installed via a package?
+                        - name: Write docker-puppet.py
+                          copy: content="{{docker_puppet_script}}" dest=/var/lib/docker-puppet/docker-puppet.py force=yes
+                        # Here we are dumping all the docker container startup configuration data
+                        # so that we can have access to how they are started outside of heat
+                        # and docker-cmd.  This lets us create command line tools to test containers.
+                        - name: Write docker-container-startup-configs
+                          copy: content="{{docker_startup_configs | to_json}}" dest=/var/lib/docker-container-startup-configs.json force=yes
+                        - name: Create /var/lib/kolla/config_files directory
+                          file: path=/var/lib/kolla/config_files state=directory
+                        - name: Write kolla config json files
+                          copy: content="{{item.value|to_json}}" dest="{{item.key}}" force=yes
+                          with_dict: "{{kolla_config}}"
+                        ########################################################
+                        # Bootstrap tasks, only performed on bootstrap_server_id
+                        ########################################################
+                        - name: Write docker-puppet-tasks json files
+                          copy: content="{{item.value|to_json}}" dest=/var/lib/docker-puppet/docker-puppet-tasks{{item.key.replace("step_", "")}}.json force=yes
+                          with_dict: "{{docker_puppet_tasks}}"
+                          when: deploy_server_id == bootstrap_server_id
+{%- endraw %}
+
+  {{role.name}}HostPrepDeployment:
+    type: OS::Heat::SoftwareDeploymentGroup
+    properties:
+      servers: {get_param: [servers, {{role.name}}]}
+      config: {get_resource: {{role.name}}HostPrepConfig}
+
+  {{role.name}}GenerateConfig:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config: {get_file: docker-puppet.py}
+      inputs:
+        - name: NET_HOST
+
+  {{role.name}}GenerateConfigDeployment:
+    type: OS::Heat::SoftwareDeploymentGroup
+    depends_on: [{{role.name}}ArtifactsDeploy, {{role.name}}HostPrepDeployment]
+    properties:
+      name: {{role.name}}GenerateConfigDeployment
+      servers: {get_param: [servers, {{role.name}}]}
+      config: {get_resource: {{role.name}}GenerateConfig}
+      input_values:
+        NET_HOST: 'true'
+
+  {{role.name}}PuppetStepConfig:
+    type: OS::Heat::Value
+    properties:
+      type: string
+      value:
+        yaql:
+          expression:
+            # select 'step_config' only from services that do not have a docker_config
+            $.data.service_names.zip($.data.step_config, $.data.docker_config).where($[2] = null).where($[1] != null).select($[1]).join("\n")
+          data:
+            service_names: {get_param: [role_data, {{role.name}}, service_names]}
+            step_config: {get_param: [role_data, {{role.name}}, step_config]}
+            docker_config: {get_param: [role_data, {{role.name}}, docker_config]}
+
+  {{role.name}}DockerConfig:
+    type: OS::Heat::Value
+    properties:
+      type: json
+      value:
+        yaql:
+          expression:
+            # select 'docker_config' only from services that have it
+            $.data.service_names.zip($.data.docker_config).where($[1] != null).select($[1]).reduce($1.mergeWith($2), {})
+          data:
+            service_names: {get_param: [role_data, {{role.name}}, service_names]}
+            docker_config: {get_param: [role_data, {{role.name}}, docker_config]}
+
+  # BEGIN BAREMETAL CONFIG STEPS
+
+  {{role.name}}PreConfig:
+    type: OS::TripleO::Tasks::{{role.name}}PreConfig
+    properties:
+      servers: {get_param: [servers, {{role.name}}]}
+      input_values:
+        update_identifier: {get_param: DeployIdentifier}
+
+  {{role.name}}Config:
+    type: OS::TripleO::{{role.name}}Config
+    properties:
+      StepConfig: {get_attr: [{{role.name}}PuppetStepConfig, value]}
+
+  {% for step in range(1, deploy_steps_max) %}
+
+  {{role.name}}Deployment_Step{{step}}:
+    type: OS::Heat::StructuredDeploymentGroup
+    depends_on:
+      - WorkflowTasks_Step{{step}}_Execution
+    {% if step == 1 %}
+    {% for dep in roles %}
+      - {{dep.name}}PreConfig
+      - {{dep.name}}ArtifactsDeploy
+    {% endfor %}
+    {% else %}
+    {% for dep in roles %}
+      - {{dep.name}}Deployment_Step{{step -1}}
+      - {{dep.name}}ContainersDeployment_Step{{step -1}}
+    {% endfor %}
+      - {{primary_role_name}}DockerPuppetTasksDeployment{{step -1}}
+    {% endif %}
+    properties:
+      name: {{role.name}}Deployment_Step{{step}}
+      servers: {get_param: [servers, {{role.name}}]}
+      config: {get_resource: {{role.name}}Config}
+      input_values:
+        step: {{step}}
+        update_identifier: {get_param: DeployIdentifier}
+
+  {% endfor %}
+  # END BAREMETAL CONFIG STEPS
+
+  # BEGIN CONTAINER CONFIG STEPS
+  {% for step in range(1, deploy_steps_max) %}
+
+  {{role.name}}ContainersConfig_Step{{step}}:
+    type: OS::Heat::StructuredConfig
+    properties:
+      group: docker-cmd
+      config:
+        {get_attr: [{{role.name}}DockerConfig, value, step_{{step}}]}
+
+  {{role.name}}ContainersDeployment_Step{{step}}:
+    type: OS::Heat::StructuredDeploymentGroup
+  {% if step == 1 %}
+    depends_on:
+        {%- for dep in roles %}
+      - {{dep.name}}Deployment_Step{{step}} # baremetal steps of the same level run first
+        {%- endfor %}
+      - {{role.name}}PreConfig
+      - {{role.name}}HostPrepDeployment
+  {% else %}
+    depends_on:
+        {% for dep in roles %}
+        - {{dep.name}}ContainersDeployment_Step{{step -1}}
+        - {{dep.name}}Deployment_Step{{step}} # baremetal steps of the same level run first
+        - {{dep.name}}Deployment_Step{{step -1}}
+        {% endfor %}
+        - {{primary_role_name}}DockerPuppetTasksDeployment{{step -1}}
+  {% endif %}
+    properties:
+      name: {{role.name}}ContainersDeployment_Step{{step}}
+      servers: {get_param: [servers, {{role.name}}]}
+      config: {get_resource: {{role.name}}ContainersConfig_Step{{step}}}
+
+  {% endfor %}
+  # END CONTAINER CONFIG STEPS
+
+  {{role.name}}PostConfig:
+    type: OS::TripleO::Tasks::{{role.name}}PostConfig
+    depends_on:
+  {% for dep in roles %}
+      - {{dep.name}}Deployment_Step5
+      - {{primary_role_name}}DockerPuppetTasksDeployment5
+  {% endfor %}
+    properties:
+      servers:  {get_param: servers}
+      input_values:
+        update_identifier: {get_param: DeployIdentifier}
+
+  # Note, this should come last, so use depends_on to ensure
+  # this is created after any other resources.
+  {{role.name}}ExtraConfigPost:
+    depends_on:
+  {% for dep in roles %}
+      - {{dep.name}}PostConfig
+  {% endfor %}
+    type: OS::TripleO::NodeExtraConfigPost
+    properties:
+        servers: {get_param: [servers, {{role.name}}]}
+
+{% endfor %}
