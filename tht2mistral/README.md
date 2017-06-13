@@ -22,7 +22,7 @@ patchset 4 of overcloud.j2.yaml and not patchset 6:
 
 So ctlplane_service_ips was not in the Mistral env() and the deploy failed. 
 I think this is becuase 463324 and 467682 have a few of the same files: 
-
+```
 ./463324/docker/docker-steps.j2
 ./463324/overcloud.j2.yaml
 ./463324/puppet/post.j2.yaml
@@ -32,14 +32,14 @@ I think this is becuase 463324 and 467682 have a few of the same files:
 ./467682/overcloud.j2.yaml
 ./467682/puppet/post.j2.yaml
 ./467682/puppet/puppet-steps.j2
-
+```
 As per the following: 
-
+```
 diff -u ./{463324,467682}/docker/docker-steps.j2
 diff -u ./{463324,467682}/overcloud.j2.yaml
 diff -u ./{463324,467682}/puppet/post.j2.yaml
 diff -u ./{463324,467682}/puppet/puppet-steps.j2
-
+```
 All of the changes from 467682 are additive for the ctlplane_service_ips. 
 
 Thus, provided I put the files in 467682 after 463324, I will 
@@ -49,5 +49,26 @@ not want to skip 463324 altogether as it has changes I need.
 Thus, a script copies the changes in a specific order for now. 
 Ultimately, I think these will need to be rebased. 
 
+The install.sh script puts the files in the following order:
+
  463324, 467682, 465066
+
+However, I get the following error:
+
+```
+2017-06-13 19:55:28Z [overcloud]: CREATE_FAILED  Resource CREATE failed: The Referenced Attribute (ControllerIpListMap ctlplane_service_ips) is incorrect.
+
+ Stack overcloud CREATE_FAILED 
+
+Heat Stack create failed.
+Heat Stack create failed.
+
+real 10m37.763s
+user 0m3.742s
+sys  0m0.408s
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ 
+```
+
+And `openstack stack failures list overcloud` returns nothing. 
+
 
