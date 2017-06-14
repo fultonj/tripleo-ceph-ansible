@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
 
-DNS=1
+DNS=0
 
-IRONIC=1
+MISTRAL=0
+MISTRAL_FORK=0
 
-MISTRAL=1
-MISTRAL_FORK=1
-
-CEPH_ANSIBLE=1
+CEPH_ANSIBLE=0
 CEPH_ANSIBLE_MASTER=0 
 
-THT=1
+THT=0
 
-WORKBOOK=1
-PRIKEY=1    # only works in WORKBOOK=1
+WORKBOOK=0
+PRIKEY=0    # only works in WORKBOOK=1
 
 source ~/stackrc
 
@@ -21,14 +19,8 @@ if [ $DNS -eq 1 ]; then
     openstack subnet list 
     SNET=$(openstack subnet list | awk '/192/ {print $2}')
     openstack subnet show $SNET
-    openstack subnet set $SNET--dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248
+    openstack subnet set $SNET --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248 
     openstack subnet show $SNET
-fi
-
-if [ $IRONIC -eq 1 ]; then
-    echo "Updating ironic nodes with compute and control profiles for their respective flavors"
-    ironic node-update ceph-0 replace properties/capabilities=profile:compute,boot_option:local
-    ironic node-update control-0 replace properties/capabilities=profile:control,boot_option:local
 fi
 
 if [ $MISTRAL -eq 1 ]; then
