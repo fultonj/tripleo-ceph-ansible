@@ -82,6 +82,9 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 
     echo "Disable retry files given permissions issue with /usr/share (for now)"
     sudo sed -i s/\#retry_files_enabled\ =\ False/retry_files_enabled\ =\ False/g /etc/ansible/ansible.cfg
+
+    echo "Disable deprecation warnings"
+    sudo sed -i s/\#deprecation_warnings\ =\ True/deprecation_warnings\ =\ False/g /etc/ansible/ansible.cfg
 fi
 
 if [ $THT -eq 1 ]; then
