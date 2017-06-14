@@ -85,27 +85,9 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 fi
 
 if [ $THT -eq 1 ]; then
-    dir=/home/stack/tripleo-heat-templates
-    if [ ! -d  $dir ]; then
-	# https://github.com/fultonj/oooq/blob/master/setup-deploy-artifacts.sh
-	echo "$dir is missing; please git clone it from review.openstack.org"
-	exit 1
-    fi
-    if [[ $(ssh-add -l | wc -l) -eq 0 ]]; then
-	# did they forward their SSH key?
-	echo "No SSH agent with keys present. Will not be able to connect to git."
-	exit 1
-    fi
-
-    echo "Patching ~/templates with newer unmerged changes from the following:"
-    echo "- https://review.openstack.org/#/c/463324"
-    echo "- https://review.openstack.org/#/c/467682"
-    echo "- https://review.openstack.org/#/c/465066"
-    pushd $dir
-    # this will pull in 463324 and 467682 via dependencies
-    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/6 && git checkout FETCH_HEAD
-    git checkout -b bp/tripleo-ceph-ansible
-    popd 
+    pushd /home/stack/tripleo-ceph-ansible/tht2mistral
+    bash install.sh
+    popd
 fi
 
 if [ $WORKBOOK -eq 1 ]; then
