@@ -19,9 +19,9 @@ if [[ $ENV -eq 1 ]]; then
     ENV=env_heat_should_create
     EXISTS=$(mistral environment-list | grep $ENV | wc -l)
     if [[ $EXISTS -gt 0 ]]; then
-        mistral environment-update -f yaml $ENV.yaml
+        mistral environment-update -f yaml $ENV.json
     else
-        mistral environment-create -f yaml $ENV.yaml
+        mistral environment-create -f yaml $ENV.json
     fi
     mistral environment-get $ENV
 fi

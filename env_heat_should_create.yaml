@@ -1,8 +1,0 @@
----
-name: "env_heat_should_create"
-variables: 
-  service_ips:
-    ceph_mon_ctlplane_node_ips:
-      - "192.168.24.12"
-    ceph_osd_ctlplane_node_ips:
-      - "192.168.24.15"
