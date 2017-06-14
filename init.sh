@@ -2,6 +2,8 @@
 
 DNS=1
 
+IRONIC=1
+
 SET_MISTRAL_HOME=1
 MISTRAL=0
 MISTRAL_FORK=0
@@ -22,6 +24,13 @@ if [ $DNS -eq 1 ]; then
     openstack subnet show $SNET
     openstack subnet set $SNET --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248 
     openstack subnet show $SNET
+fi
+
+if [ $IRONIC -eq 1 ]; then
+    echo "Updating ironic ceph nodes with ceph-storage profiles"
+    for i in $(seq 0 2); do 
+	ironic node-update ceph-$i replace properties/capabilities=profile:ceph-storage,boot_option:local
+    done
 fi
 
 if [ $SET_MISTRAL_HOME -eq 1 ]; then
