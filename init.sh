@@ -7,7 +7,7 @@ MISTRAL=0
 MISTRAL_FORK=0
 
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_MASTER=0 # try latest ceph-ansible
+CEPH_ANSIBLE_MASTER=1 # try latest ceph-ansible
 
 THT=1
 
@@ -100,8 +100,8 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     echo "Updating /etc/ansible/ansible.cfg action_plugins=/usr/share/ceph-ansible/plugins"
     sudo sed -i -e s/\#action_plugins.*/action_plugins\ \=\ \\/usr\\/share\\/ceph-ansible\\/plugins\\/actions/g /etc/ansible/ansible.cfg
 
-    echo "Disable retry files given permissions issue with /usr/share (for now)"
-    sudo sed -i s/\#retry_files_enabled\ =\ False/retry_files_enabled\ =\ False/g /etc/ansible/ansible.cfg
+    # echo "Disable retry files given permissions issue with /usr/share (for now)"
+    #sudo sed -i s/\#retry_files_enabled\ =\ False/retry_files_enabled\ =\ False/g /etc/ansible/ansible.cfg
 
     echo "Disable deprecation warnings"
     sudo sed -i s/\#deprecation_warnings\ =\ True/deprecation_warnings\ =\ False/g /etc/ansible/ansible.cfg
