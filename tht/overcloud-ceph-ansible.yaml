@@ -10,3 +10,4 @@ parameter_defaults:
   ControllerCount: 1
   ComputeCount: 1
   CephStorageCount: 3
+  NtpServer: 10.5.26.10
