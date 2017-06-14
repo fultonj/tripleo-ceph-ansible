@@ -6,7 +6,7 @@ parameter_defaults:
   CephClusterFSID: b007365e-cc87-11e5-a877-525400330ee0
   OvercloudControlFlavor: control
   OvercloudComputeFlavor: compute
-  OvercloudCephStorageFlavor: ceph
-  ControllerCount: 3
+  OvercloudCephStorageFlavor: ceph-storage
+  ControllerCount: 1
   ComputeCount: 1
   CephStorageCount: 3
