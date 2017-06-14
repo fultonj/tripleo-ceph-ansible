@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 
-DNS=0
+DNS=1
 
-MISTRAL=1
-MISTRAL_FORK=1
+SET_MISTRAL_HOME=1
+MISTRAL=0
+MISTRAL_FORK=0
 
 CEPH_ANSIBLE=1
 CEPH_ANSIBLE_MASTER=0 # try latest ceph-ansible
@@ -21,6 +22,28 @@ if [ $DNS -eq 1 ]; then
     openstack subnet show $SNET
     openstack subnet set $SNET --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248 
     openstack subnet show $SNET
+fi
+
+if [ $SET_MISTRAL_HOME -eq 1 ]; then
+    echo "Setting Mistral Home until the following merge: "
+    echo "- https://review.openstack.org/#/c/473587"
+    echo "- https://review.openstack.org/#/c/473586"
+    echo "This requires a Mistral restart"
+    grep mistral /etc/passwd
+    MISTRAL_HOME=/tmp/mistral-ansible
+    if [[ ! -d $MISTRAL_HOME ]]; then
+	sudo mkdir $MISTRAL_HOME
+    fi
+    for svc in $(echo openstack-mistral-{api,engine,executor}); do
+	sudo systemctl status $svc
+	sudo systemctl stop $svc
+    done
+    sudo usermod -d $MISTRAL_HOME -m mistral
+    for svc in $(echo openstack-mistral-{api,engine,executor}); do
+	sudo systemctl start $svc
+	sudo systemctl status $svc
+    done
+    grep mistral /etc/passwd
 fi
 
 if [ $MISTRAL -eq 1 ]; then
