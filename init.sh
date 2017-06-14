@@ -34,6 +34,7 @@ if [ $SET_MISTRAL_HOME -eq 1 ]; then
     if [[ ! -d $MISTRAL_HOME ]]; then
 	sudo mkdir $MISTRAL_HOME
     fi
+    sudo chown mistral:mistral $MISTRAL_HOME
     for svc in $(echo openstack-mistral-{api,engine,executor}); do
 	sudo systemctl status $svc
 	sudo systemctl stop $svc
