@@ -19,4 +19,5 @@ time openstack overcloud deploy --templates ~/templates \
 -e ~/templates/environments/ceph_ansible/ceph_ansible.yaml \
 -e ~/templates/environments/puppet-pacemaker.yaml \
 -e ~/templates/environments/low-memory-usage.yaml \
+-e ~/templates/environments/disable-telemetry.yaml \
 -e ~/tripleo-ceph-ansible/tht/overcloud-ceph-ansible.yaml
