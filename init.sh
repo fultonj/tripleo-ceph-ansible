@@ -2,16 +2,16 @@
 
 DNS=0
 
-MISTRAL=0
-MISTRAL_FORK=0
+MISTRAL=1
+MISTRAL_FORK=1
 
-CEPH_ANSIBLE=0
-CEPH_ANSIBLE_MASTER=0 
+CEPH_ANSIBLE=1
+CEPH_ANSIBLE_MASTER=0 # try latest ceph-ansible
 
-THT=0
+THT=1
 
-WORKBOOK=0
-PRIKEY=0    # only works in WORKBOOK=1
+WORKBOOK=1
+PRIKEY=1    # only works in WORKBOOK=1
 
 source ~/stackrc
 
@@ -24,6 +24,11 @@ if [ $DNS -eq 1 ]; then
 fi
 
 if [ $MISTRAL -eq 1 ]; then
+    # as the actions have merged, this shouldn't be necessary 
+    mistral action-list | grep ansible 
+    # however, pulling from my fork to get the rundir 
+    # an alternative to rundir is to set the mistral user homedir to /tmp/mistral
+    
     # this should be updated to pull from https://review.openstack.org/#/c/470021/
     echo "Installing Mistral Ansbile actions from out of tree"
     # https://github.com/d0ugal/mistral-ansible-actions
