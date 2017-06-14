@@ -18,11 +18,11 @@ PRIKEY=1    # only works in WORKBOOK=1
 source ~/stackrc
 
 if [ $DNS -eq 1 ]; then
-    neutron subnet-list
-    SNET=$(neutron subnet-list | awk '/192/ {print $2}')
-    neutron subnet-show $SNET
-    neutron subnet-update ${SNET} --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248 
-    neutron subnet-show $SNET
+    openstack subnet list 
+    SNET=$(openstack subnet list | awk '/192/ {print $2}')
+    openstack subnet show $SNET
+    openstack subnet set $SNET--dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248
+    openstack subnet show $SNET
 fi
 
 if [ $IRONIC -eq 1 ]; then
