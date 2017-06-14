@@ -1,6 +1,6 @@
 Three patches update THT so it calls Mistral to install ceph-ansible. 
 They don't co-exist easily at the moment (need rebase) so install.sh 
-will install them in a particular order as a workaround. 
+will install.sh them directly in a particular order as a workaround. 
 
 I used to do the following to pull in the following THT changes:
 ```
@@ -53,7 +53,7 @@ The install.sh script puts the files in the following order:
 
  463324, 467682, 465066
 
-However, I get the following error:
+However, I get the following error using patchset 6 of 467682:
 
 ```
 2017-06-13 19:55:28Z [overcloud]: CREATE_FAILED  Resource CREATE failed: The Referenced Attribute (ControllerIpListMap ctlplane_service_ips) is incorrect.
@@ -69,6 +69,89 @@ sys  0m0.408s
 (undercloud) [stack@undercloud tripleo-ceph-ansible]$ 
 ```
 
-And `openstack stack failures list overcloud` returns nothing. 
+However, using all of patchset 6 from 467682 for THT but with 
+overcloud.j2.yaml from patchset 4, I get the following in Mistral 
+with `action: std.echo output=<% env() %>`: 
 
+```
+{
+  "service_ips": {
+    "panko_api_node_ips": [
+      "192.168.24.18"
+    ],
+    "ceph_mon_node_ips": [
+      "192.168.24.18"
+    ],
+    "glance_api_node_ips": [
+      "192.168.24.18"
+    ],
+    "horizon_node_ips": [
+      "192.168.24.18"
+    ],
+    "gnocchi_api_node_ips": [
+      "192.168.24.18"
+    ],
+    "nova_vnc_proxy_node_ips": [
+      "192.168.24.18"
+    ],
+    "heat_api_cfn_node_ips": [
+      "192.168.24.18"
+    ],
+    "nova_placement_node_ips": [
+      "192.168.24.18"
+    ],
+    "nova_libvirt_node_ips": [
+      "192.168.24.13"
+    ],
+    "memcached_node_ips": [
+      "192.168.24.18"
+    ],
+    "nova_metadata_node_ips": [
+      "192.168.24.18"
+    ],
+    "rabbitmq_node_ips": [
+      "192.168.24.18"
+    ],
+    "aodh_api_node_ips": [
+      "192.168.24.18"
+    ],
+    "heat_api_cloudwatch_node_ips": [
+      "192.168.24.18"
+    ],
+    "swift_storage_node_ips": [
+      "192.168.24.18"
+    ],
+    "nova_api_node_ips": [
+      "192.168.24.18"
+    ],
+    "heat_api_node_ips": [
+      "192.168.24.18"
+    ],
+    "cinder_api_node_ips": [
+      "192.168.24.18"
+    ],
+    "redis_node_ips": [
+      "192.168.24.18"
+    ],
+    "keystone_admin_api_node_ips": [
+      "192.168.24.18"
+    ],
+    "keystone_public_api_node_ips": [
+      "192.168.24.18"
+    ],
+    "neutron_api_node_ips": [
+      "192.168.24.18"
+    ],
+    "swift_proxy_node_ips": [
+      "192.168.24.18"
+    ],
+    "mysql_node_ips": [
+      "192.168.24.18"
+    ]
+  },
+  "heat_extresource_data": {}
+}
+```
 
+Thus, patchset 4 is mixed in only for overcloud.j2.yaml. I will review 
+with gfidente when he returns. 
