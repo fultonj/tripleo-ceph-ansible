@@ -1,6 +1,6 @@
 Three patches update THT so it calls Mistral to install ceph-ansible. 
 They don't co-exist easily at the moment (need rebase) so install.sh 
-will install.sh them directly in a particular order as a workaround. 
+will installs them directly in a particular order as a workaround. 
 
 I used to do the following to pull in the following THT changes:
 ```
@@ -53,26 +53,11 @@ The install.sh script puts the files in the following order:
 
  463324, 467682, 465066
 
-However, I get the following error using patchset 6 of 467682:
+It also has the option to install overcloud.j2.yaml from 467682 
+as the patcset 4 verson or the patchet 6 version which produce
+different enviornments.
 
-```
-2017-06-13 19:55:28Z [overcloud]: CREATE_FAILED  Resource CREATE failed: The Referenced Attribute (ControllerIpListMap ctlplane_service_ips) is incorrect.
-
- Stack overcloud CREATE_FAILED 
-
-Heat Stack create failed.
-Heat Stack create failed.
-
-real 10m37.763s
-user 0m3.742s
-sys  0m0.408s
-(undercloud) [stack@undercloud tripleo-ceph-ansible]$ 
-```
-
-However, using all of patchset 6 from 467682 for THT but with 
-overcloud.j2.yaml from patchset 4, I get the following in Mistral 
-with `action: std.echo output=<% env() %>`: 
-
+Patchset 4:
 ```
 {
   "service_ips": {
@@ -153,5 +138,202 @@ with `action: std.echo output=<% env() %>`:
 }
 ```
 
-Thus, patchset 4 is mixed in only for overcloud.j2.yaml. I will review 
-with gfidente when he returns. 
+Patchet 6:
+```
+{
+  "service_ips": {
+    "nova_vnc_proxy_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "timezone_ctlplane_node_ips": [
+      "192.168.24.18",
+      "192.168.24.13"
+    ],
+    "aodh_notifier_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "ca_certs_ctlplane_node_ips": [
+      "192.168.24.18",
+      "192.168.24.13"
+    ],
+    "cinder_volume_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "keystone_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "aodh_evaluator_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "swift_storage_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "redis_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "nova_scheduler_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "gnocchi_api_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "heat_api_cfn_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "gnocchi_metricd_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "neutron_dhcp_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "tripleo_packages_ctlplane_node_ips": [
+      "192.168.24.18",
+      "192.168.24.13"
+    ],
+    "nova_conductor_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "pacemaker_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "ceph_osd_ctlplane_node_ips": [
+      "192.168.24.13"
+    ],
+    "neutron_plugin_ml2_ctlplane_node_ips": [
+      "192.168.24.18",
+      "192.168.24.13"
+    ],
+    "nova_libvirt_ctlplane_node_ips": [
+      "192.168.24.13"
+    ],
+    "cinder_api_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "swift_proxy_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "nova_api_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "heat_api_cloudwatch_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "ceilometer_expirer_disabled_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "mysql_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "glance_api_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "ceilometer_agent_notification_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "ntp_ctlplane_node_ips": [
+      "192.168.24.18",
+      "192.168.24.13"
+    ],
+    "nova_compute_ctlplane_node_ips": [
+      "192.168.24.13"
+    ],
+    "rabbitmq_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "mysql_client_ctlplane_node_ips": [
+      "192.168.24.18",
+      "192.168.24.13"
+    ],
+    "keystone_public_api_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "gnocchi_statsd_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "nova_metadata_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "tripleo_firewall_ctlplane_node_ips": [
+      "192.168.24.18",
+      "192.168.24.13"
+    ],
+    "aodh_listener_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "neutron_l3_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "horizon_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "heat_engine_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "ceilometer_agent_central_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "sshd_ctlplane_node_ips": [
+      "192.168.24.18",
+      "192.168.24.13"
+    ],
+    "ceph_mon_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "kernel_ctlplane_node_ips": [
+      "192.168.24.18",
+      "192.168.24.13"
+    ],
+    "nova_consoleauth_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "mongodb_disabled_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "neutron_metadata_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "heat_api_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "memcached_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "snmp_ctlplane_node_ips": [
+      "192.168.24.18",
+      "192.168.24.13"
+    ],
+    "cinder_scheduler_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "neutron_api_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "haproxy_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "keystone_admin_api_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "ceilometer_agent_compute_ctlplane_node_ips": [
+      "192.168.24.13"
+    ],
+    "swift_ringbuilder_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "nova_placement_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "neutron_ovs_agent_ctlplane_node_ips": [
+      "192.168.24.18",
+      "192.168.24.13"
+    ],
+    "panko_api_ctlplane_node_ips": [
+      "192.168.24.18"
+    ],
+    "aodh_api_ctlplane_node_ips": [
+      "192.168.24.18"
+    ]
+  },
+  "heat_extresource_data": {}
+}
+```
