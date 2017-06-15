@@ -1,0 +1,1950 @@
+Thu Jun 15 11:50:34 EDT 2017
+
+A run of: 
+
+time openstack overcloud deploy --templates ~/templates \
+-e ~/templates/environments/ceph_ansible/ceph_ansible.yaml \
+-e ~/templates/environments/puppet-pacemaker.yaml \
+-e ~/templates/environments/low-memory-usage.yaml \
+-e ~/templates/environments/disable-telemetry.yaml \
+-e ~/tripleo-ceph-ansible/tht/overcloud-ceph-ansible.yaml
+
+Using: 
+ https://review.openstack.org/#/q/topic:bp/tripleo-ceph-ansible
+
+Gets this far: 
+
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ openstack server list
+...
++---------------------+---------------------+--------+----------------------+----------------+
+| ID                  | Name                | Status | Networks             | Image Name     |
++---------------------+---------------------+--------+----------------------+----------------+
+| 7f62a463-1d2e-4f60- | overcloud-          | ACTIVE | ctlplane=192.168.24. | overcloud-full |
+| 9ee1-254be5bb8d88   | controller-2        |        | 9                    |                |
+| e558d293-213e-46ab- | overcloud-          | ACTIVE | ctlplane=192.168.24. | overcloud-full |
+| 9895-37251c7c3202   | controller-0        |        | 20                   |                |
+| 640881b5-65e6-4af7  | overcloud-          | ACTIVE | ctlplane=192.168.24. | overcloud-full |
+| -ae6e-2f369147c318  | cephstorage-2       |        | 18                   |                |
+| b2bc69f8-ee32-4949- | overcloud-          | ACTIVE | ctlplane=192.168.24. | overcloud-full |
+| b003-449462e9bc0e   | controller-1        |        | 10                   |                |
+| e18361d9-1eba-4442- | overcloud-          | ACTIVE | ctlplane=192.168.24. | overcloud-full |
+| b523-1c55a2b3c3f7   | cephstorage-0       |        | 7                    |                |
+| 4d99efbd-3e11-4db0- | overcloud-          | ACTIVE | ctlplane=192.168.24. | overcloud-full |
+| 8c09-0e7919340edb   | cephstorage-1       |        | 15                   |                |
+| 183946f6-ae0a-4136- | overcloud-          | ACTIVE | ctlplane=192.168.24. | overcloud-full |
+| b2f2-78584969b486   | novacompute-0       |        | 12                   |                |
++---------------------+---------------------+--------+----------------------+----------------+
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ 
+
+but it fails at the ceph-ansible workflow which uses containers (didn't have this problem without containers): 
+
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ openstack stack failures list overcloud
+
+overcloud.AllNodesDeploySteps.WorkflowTasks_Step2_Execution:
+  resource_type: OS::Mistral::ExternalResource
+  physical_resource_id: 1353fc3f-4ec3-44dd-9320-d9f625faf575
+  status: CREATE_FAILED
+  status_reason: |
+    resources.WorkflowTasks_Step2_Execution: ERROR
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ 
+
+
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ mistral execution-list | grep tripleo.storage.v1.ceph-install | tail -1 
+| a5c0851e-45b6-4d53-b2dc-bf1f3f649837 | ab075e48-42e1-44dc-baaa-9d653ae69e37 | tripleo.storage.v1.ceph-install                                        | sub-workflow execution | 45992185-dee0-4e34-911c-8ce09e790b14 | ERROR   | Failure caused by error i... | 2017-06-15 15:50:36 | 2017-06-15 15:56:45 |
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ 
+
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ mistral task-list a5c0851e-45b6-4d53-b2dc-bf1f3f649837
+
+...
+
+ceph_install, from the following had the issue...
+
+ https://review.openstack.org/#/c/469644/13/workbooks/ceph-ansible.yaml
+
+let's look at the ID for that task: 
+
+mistral task-get-result $TASK_ID | jq . | sed -e 's/\\n/\n/g' -e 's/\\"/"/g'
+
+...
+
+"Failed to run action [action_ex_id=af165ad2-f167-41c0-8652-f8bb47dd6b2c, action_cls='<class 'mistral.actions.action_factory.AnsiblePlaybookAction'>', attributes='{}', params='{u'remote_user': u'heat-admin', u'inventory': {u'mdss': {u'hosts': {}}, u'rbdmirrors': {u'hosts': {}}, u'rgws': {u'hosts': {}}, u'mons': {u'hosts': {u'192.168.24.20': {}, u'192.168.24.10': {}, u'192.168.24.9': {}}}, u'osds': {u'hosts': {u'192.168.24.18': {}, u'192.168.24.15': {}, u'192.168.24.7': {}}}}, u'become_user': u'root', u'extra_vars': {u'ceph_osd_docker_devices': [u'/dev/vdb', u'/dev/vdc'], u'ceph_mon_docker_interface': u'br_ex', u'ceph_mon_docker_subnet': u'192.168.24.0/24', u'public_network': u'192.168.24.0/24', u'monitor_secret': u'AQBoqEJZAAAAABAA5T9vWHSwxxLDnY7/cuDmsQ==', u'rgw_containerized_deployment': True, u'ceph_rgw_civetweb_port': 8080, u'ceph_docker_image_tag': u'tag-build-master-jewel-centos-7', u'osd_containerized_deployment': True, u'cluster': u'ceph', u'mds_containerized_deployment': True, u'devices': [u'/dev/vdb', u'/dev/vdc'], u'mon_containerized_deployment': True, u'fetch_directory': u'/tmp/ceph-ansible-fetch/', u'journal_collocation': True, u'ceph_docker_on_openstack': False, u'docker': True, u'cluster_network': u'192.168.24.0/24', u'fsid': u'b007365e-cc87-11e5-a877-525400330ee0', u'journal_size': 256}, u'verbosity': 0, u'ssh_private_key': u'-----BEGIN RSA PRIVATE KEY-----\
+MIIEpAIBAAKCAQEAz7IVsx+M7D9GjKKXWx5AvolrvRMhl8RbUCy6qACtRdcbcRFJ\
+cVeWnG6+GNUNzMSu5GspCGI8hXzcZ8uvQ/aDWw0t5VYw229pjHBuO5jsl4SGlqh3\
+5Gr/T3h8cwmzUXIPqcqz/yzR1EY4BIUagBlHQ+ZzP7yJaGXaO5BDiicI+lFPa491\
+DLlkgG+oQnLTbsv23EUnfYkKaIwTWjDAtkH1WmHvEXQxqy5QOhJIFweW1jro8GEB\
+WnT642hRSPeVIba3vocMufOSijly0qlsvpNNRGc9PLBCphHPDUujVffw+fVEFxeS\
+lbJO/zV1MSkR5HyU2sZnDQV7Po06YfrxfP0U6QIDAQABAoIBAHIaz4siKUTdmn/H\
+D8pSe5VyYAt3SDxd9yC8AiwsewVkoUHkEmo/iZIV0UBJRJSb9c2uBdQCTGe16kzn\
+/TkkZJQQUIeva5YSxnUOi7EYWdsARwTcN0n5cpyRgCWfTbHQLUTGBU+KqxipHzt0\
+eNOpj5qBMA3zIbaGRnf00PZEbc0/AzBiKhjcrkuFkNb7QDmJ5zERiXeCjHOTFuk3\
+jlF+rIkVBGiDQlZx197+LWmrnALNCHdfBHMcA+jXl3dFUtPC4wpa/wSUAFVKhmZG\
+zxU0VEHBfhPSLMq7YIKfSXTgd4vWnNESpIe3xU2fcyWCzYJ6wm3VBbcald9K5SHh\
+0m+qm6UCgYEA6rWCoDWT8HKTdDbLUd1V5NoKGFelft5ClYj/e7gUKkTxzg8sz7lh\
+KWOP8D4AwoVvEhxp4uqNrs22qsXIE0HMzj8+lf2yoA5hlTEIlfSefMoeyZkIML+4\
+yjGyu15fn6NaQUl7tBQicUm1aGriqlARL+/ZLmJAshU5MwI+1qQ6SL8CgYEA4olC\
+zQpZDrgexAWJ+e/eV5wja9tIPvwPNqSEJ9AFH4hMUaGa16BVEQvriNg+kWDD6NP0\
+axcoo5yDNke1/M0NdtD4lDPnGOIqgHYyuqWdEKctmRQ3EHp6lYqtrJqEVAJxHQqw\
+TKOsmRCnWzazXfqlnqIqYPWQp49TGfnC/9pspFcCgYBI2tTUVC06yuX4gfW00KaT\
+5haSHcqySd2TOzZKugYQZNxGITHAvQNq7IvGgAiOWQr0LTu1Aye9pf9YnRIQ4DDp\
+qHoN5vUmd7BUtia7HXaAt+C8pTMEps5+fNTFEnNOQ0+FyoCKkmFqlv2njt4TDc13\
++tSIcFkyriHWMpE84TdyUwKBgQCdHtS9P/Ma+WslTC4xs0QEgeAze6j1PoASxzJ+\
+JpKXF0LPz4WFDshRhXH8vPdQf8wBnZjF+g8Ow4xiRoSb7WDsSu5OZF1h7ePKq7Bt\
+slZo6Xr/1HyIqlqBg+kHcThcyEDKAtLapR8eHuXkpuDrSuA6UYGRNGD7RrY9qvSr\
+3kRCCwKBgQCc3NkAhz7+ue9trX8BCj26t0Z5iLzkRu9GF5PzpBEgvh9vf4OcvyHK\
+fWTM8JQ7T8OAF8v2qZKjKUJZN1zgmilqnWV16jyT9wsT6hUJazS2Lg+zJfDU+cO4\
+/ac4ZGN3idVdVBtGe29cQLED9dndWgGtjco1K0pM7suQ4lOVdQ6LZw==\
+-----END RSA PRIVATE KEY-----\
+', u'become': True, u'forks': 6, u'playbook': u'/usr/share/ceph-ansible/site.yml.sample'}']
+ Unexpected error while running command.
+Command: ansible-playbook /usr/share/ceph-ansible/site.yml.sample --user heat-admin --become --become-user root --extra-vars {"ceph_osd_docker_devices": ["/dev/vdb", "/dev/vdc"], "ceph_mon_docker_interface": "br_ex", "ceph_mon_docker_subnet": "192.168.24.0/24", "public_network": "192.168.24.0/24", "monitor_secret": "***", "rgw_containerized_deployment": true, "ceph_rgw_civetweb_port": 8080, "ceph_docker_image_tag": "tag-build-master-jewel-centos-7", "osd_containerized_deployment": true, "cluster": "ceph", "mds_containerized_deployment": true, "devices": ["/dev/vdb", "/dev/vdc"], "mon_containerized_deployment": true, "fetch_directory": "/tmp/ceph-ansible-fetch/", "journal_collocation": true, "ceph_docker_on_openstack": false, "docker": true, "cluster_network": "192.168.24.0/24", "fsid": "b007365e-cc87-11e5-a877-525400330ee0", "journal_size": 256} --forks 6 --inventory-file /tmp/tmp7PVziZ.yaml --private-key /tmp/tmp29Pe2a
+Exit code: 2
+Stdout: '\
+PLAY [mons,agents,osds,mdss,rgws,nfss,restapis,rbdmirrors,clients,iscsigws,mgrs] ***\
+\
+TASK [check for python2] *******************************************************\
+ok: [192.168.24.10]\
+ok: [192.168.24.15]\
+ok: [192.168.24.9]\
+ok: [192.168.24.20]\
+ok: [192.168.24.18]\
+ok: [192.168.24.7]\
+\
+TASK [install python2 for Debian based systems] ********************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [install python2 for Fedora] **********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [gathering facts] *********************************************************\
+ok: [192.168.24.15]\
+ok: [192.168.24.9]\
+ok: [192.168.24.7]\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.18]\
+\
+TASK [install required packages for Fedora > 23] *******************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+PLAY [mons] ********************************************************************\
+\
+TASK [ceph.ceph-common : fail on unsupported system] ***************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : fail on unsupported architecture] *********************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : fail on unsupported distribution] *********************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : fail on unsupported distribution for red hat ceph storage] ***\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : fail on unsupported distribution for ubuntu cloud archive] ***\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : fail on unsupported ansible version] ******************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : fail if systemd is not present] ***********************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : make sure an installation origin was chosen] **********\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : make sure an installation source was chosen] **********\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : verify that a method was chosen for red hat storage] **\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20] => (item={\\'key\\': u\\'firefly\\', \\'value\\': 0.8}) \
+skipping: [192.168.24.20] => (item={\\'key\\': u\\'giant\\', \\'value\\': 0.87}) \
+skipping: [192.168.24.10] => (item={\\'key\\': u\\'firefly\\', \\'value\\': 0.8}) \
+skipping: [192.168.24.9] => (item={\\'key\\': u\\'firefly\\', \\'value\\': 0.8}) \
+skipping: [192.168.24.20] => (item={\\'key\\': u\\'infernalis\\', \\'value\\': 9}) \
+skipping: [192.168.24.10] => (item={\\'key\\': u\\'giant\\', \\'value\\': 0.87}) \
+skipping: [192.168.24.20] => (item={\\'key\\': u\\'hammer\\', \\'value\\': 0.94}) \
+skipping: [192.168.24.9] => (item={\\'key\\': u\\'giant\\', \\'value\\': 0.87}) \
+skipping: [192.168.24.10] => (item={\\'key\\': u\\'infernalis\\', \\'value\\': 9}) \
+skipping: [192.168.24.9] => (item={\\'key\\': u\\'infernalis\\', \\'value\\': 9}) \
+skipping: [192.168.24.20] => (item={\\'key\\': u\\'kraken\\', \\'value\\': 11}) \
+skipping: [192.168.24.10] => (item={\\'key\\': u\\'kraken\\', \\'value\\': 11}) \
+skipping: [192.168.24.20] => (item={\\'key\\': u\\'emperor\\', \\'value\\': 0.72}) \
+skipping: [192.168.24.9] => (item={\\'key\\': u\\'hammer\\', \\'value\\': 0.94}) \
+skipping: [192.168.24.9] => (item={\\'key\\': u\\'kraken\\', \\'value\\': 11}) \
+skipping: [192.168.24.20] => (item={\\'key\\': u\\'jewel\\', \\'value\\': 10}) \
+skipping: [192.168.24.10] => (item={\\'key\\': u\\'jewel\\', \\'value\\': 10}) \
+skipping: [192.168.24.20] => (item={\\'key\\': u\\'dumpling\\', \\'value\\': 0.67}) \
+skipping: [192.168.24.10] => (item={\\'key\\': u\\'dumpling\\', \\'value\\': 0.67}) \
+skipping: [192.168.24.9] => (item={\\'key\\': u\\'jewel\\', \\'value\\': 10}) \
+skipping: [192.168.24.9] => (item={\\'key\\': u\\'emperor\\', \\'value\\': 0.72}) \
+skipping: [192.168.24.9] => (item={\\'key\\': u\\'dumpling\\', \\'value\\': 0.67}) \
+skipping: [192.168.24.10] => (item={\\'key\\': u\\'emperor\\', \\'value\\': 0.72}) \
+skipping: [192.168.24.10] => (item={\\'key\\': u\\'hammer\\', \\'value\\': 0.94}) \
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : get ceph version] *************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : is ceph running already?] *****************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : create a local fetch directory if it does not exist] **\
+skipping: [192.168.24.20]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : check if /tmp/ceph-ansible-fetch/ directory exists] ***\
+skipping: [192.168.24.20]\
+\
+TASK [ceph.ceph-common : check if /var/lib/ceph/mon/{{ cluster }}-{{ monitor_name\\xc2\\xa0}}/keyring already exists] ***\
+skipping: [192.168.24.20]\
+\
+TASK [ceph.ceph-common : fail if /var/lib/ceph/mon/{{ cluster }}-{{ monitor_name\\xc2\\xa0}}/keyring doesn\\'t exist] ***\
+skipping: [192.168.24.20]\
+\
+TASK [ceph.ceph-common : get existing initial mon keyring if it already exists but not monitor_keyring.conf in /tmp/ceph-ansible-fetch/] ***\
+skipping: [192.168.24.20]\
+\
+TASK [ceph.ceph-common : test existing initial mon keyring] ********************\
+skipping: [192.168.24.20]\
+\
+TASK [ceph.ceph-common : fail if initial mon keyring found doesn\\'t work] *******\
+skipping: [192.168.24.20]\
+\
+TASK [ceph.ceph-common : write initial mon keyring in /tmp/ceph-ansible-fetch//monitor_keyring.conf if it doesn\\'t exist] ***\
+skipping: [192.168.24.20]\
+\
+TASK [ceph.ceph-common : put initial mon keyring in mon kv store] **************\
+skipping: [192.168.24.20]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : check for a ceph socket] ******************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : check for a rados gateway socket] *********************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : create ceph initial directories] **********************\
+skipping: [192.168.24.20] => (item=/etc/ceph) \
+skipping: [192.168.24.20] => (item=/var/lib/ceph/) \
+skipping: [192.168.24.10] => (item=/etc/ceph) \
+skipping: [192.168.24.10] => (item=/var/lib/ceph/) \
+skipping: [192.168.24.20] => (item=/var/lib/ceph/mon) \
+skipping: [192.168.24.9] => (item=/etc/ceph) \
+skipping: [192.168.24.10] => (item=/var/lib/ceph/mon) \
+skipping: [192.168.24.9] => (item=/var/lib/ceph/) \
+skipping: [192.168.24.20] => (item=/var/lib/ceph/osd) \
+skipping: [192.168.24.10] => (item=/var/lib/ceph/osd) \
+skipping: [192.168.24.20] => (item=/var/lib/ceph/mds) \
+skipping: [192.168.24.10] => (item=/var/lib/ceph/mds) \
+skipping: [192.168.24.20] => (item=/var/lib/ceph/tmp) \
+skipping: [192.168.24.20] => (item=/var/lib/ceph/radosgw) \
+skipping: [192.168.24.9] => (item=/var/lib/ceph/tmp) \
+skipping: [192.168.24.9] => (item=/var/lib/ceph/mds) \
+skipping: [192.168.24.9] => (item=/var/lib/ceph/radosgw) \
+skipping: [192.168.24.10] => (item=/var/lib/ceph/bootstrap-rgw) \
+skipping: [192.168.24.10] => (item=/var/lib/ceph/bootstrap-mds) \
+skipping: [192.168.24.9] => (item=/var/lib/ceph/bootstrap-rgw) \
+skipping: [192.168.24.9] => (item=/var/lib/ceph/bootstrap-mds) \
+skipping: [192.168.24.10] => (item=/var/lib/ceph/bootstrap-osd) \
+skipping: [192.168.24.9] => (item=/var/lib/ceph/bootstrap-osd) \
+skipping: [192.168.24.20] => (item=/var/lib/ceph/bootstrap-osd) \
+skipping: [192.168.24.20] => (item=/var/lib/ceph/bootstrap-mds) \
+skipping: [192.168.24.9] => (item=/var/lib/ceph/osd) \
+skipping: [192.168.24.9] => (item=/var/lib/ceph/mon) \
+skipping: [192.168.24.10] => (item=/var/lib/ceph/radosgw) \
+skipping: [192.168.24.10] => (item=/var/lib/ceph/tmp) \
+skipping: [192.168.24.20] => (item=/var/lib/ceph/bootstrap-rgw) \
+\
+TASK [ceph.ceph-common : generate cluster fsid] ********************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : reuse cluster fsid when cluster is already running] ***\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : read cluster fsid if it already exists] ***************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : create ceph conf directory and assemble directory] ****\
+skipping: [192.168.24.20] => (item=/etc/ceph/) \
+skipping: [192.168.24.20] => (item=/etc/ceph/ceph.d/) \
+skipping: [192.168.24.10] => (item=/etc/ceph/) \
+skipping: [192.168.24.10] => (item=/etc/ceph/ceph.d/) \
+skipping: [192.168.24.9] => (item=/etc/ceph/) \
+skipping: [192.168.24.9] => (item=/etc/ceph/ceph.d/) \
+\
+TASK [ceph.ceph-common : generate ceph configuration file: ceph.conf] **********\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : assemble ceph.conf and fragments] *********************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : create rbd client directory] **************************\
+skipping: [192.168.24.20] => (item=/var/run/ceph) \
+skipping: [192.168.24.20] => (item=/var/log/ceph) \
+skipping: [192.168.24.10] => (item=/var/run/ceph) \
+skipping: [192.168.24.10] => (item=/var/log/ceph) \
+skipping: [192.168.24.9] => (item=/var/run/ceph) \
+skipping: [192.168.24.9] => (item=/var/log/ceph) \
+\
+TASK [ceph.ceph-common : configure cluster name] *******************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : check /etc/default/ceph exist] ************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : configure cluster name] *******************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-common : configure cluster name] *******************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : fail if systemd is not present] ****************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : check if it is atomic host] ********************\
+ok: [192.168.24.20]\
+ok: [192.168.24.9]\
+ok: [192.168.24.10]\
+\
+TASK [ceph.ceph-docker-common : set fact for using atomic host] ****************\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : allow apt to use a repository over https (debian)] ***\
+skipping: [192.168.24.20] => (item=[]) \
+skipping: [192.168.24.10] => (item=[]) \
+skipping: [192.168.24.9] => (item=[]) \
+\
+TASK [ceph.ceph-docker-common : add docker\\'s gpg key] **************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : add docker and debian testing repository] ******\
+skipping: [192.168.24.20] => (item=deb https://apt.dockerproject.org/repo/ debian-Core main) \
+skipping: [192.168.24.10] => (item=deb https://apt.dockerproject.org/repo/ debian-Core main) \
+skipping: [192.168.24.20] => (item=deb http://http.us.debian.org/debian/ testing contrib main) \
+skipping: [192.168.24.10] => (item=deb http://http.us.debian.org/debian/ testing contrib main) \
+skipping: [192.168.24.9] => (item=deb https://apt.dockerproject.org/repo/ debian-Core main) \
+skipping: [192.168.24.9] => (item=deb http://http.us.debian.org/debian/ testing contrib main) \
+\
+TASK [ceph.ceph-docker-common : install pip from testing on debian] ************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : install docker-py via pip for debian] **********\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : install docker on debian] **********************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : install six via pip] ***************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : install docker on ubuntu] **********************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : enable extras on centos] ***********************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : install python-six] ****************************\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+ok: [192.168.24.20]\
+\
+TASK [ceph.ceph-docker-common : install python-docker-py on red hat / centos] **\
+changed: [192.168.24.20]\
+changed: [192.168.24.10]\
+changed: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : install python-docker on ubuntu] ***************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : install docker on red hat / centos] ************\
+ok: [192.168.24.20]\
+ok: [192.168.24.9]\
+ok: [192.168.24.10]\
+\
+TASK [ceph.ceph-docker-common : pause after docker install before starting (on openstack vms)] ***\
+skipping: [192.168.24.20]\
+\
+TASK [ceph.ceph-docker-common : start docker service] **************************\
+changed: [192.168.24.9]\
+changed: [192.168.24.10]\
+changed: [192.168.24.20]\
+\
+TASK [ceph.ceph-docker-common : install ntp] ***********************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : set_fact] **************************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+\
+TASK [ceph.ceph-docker-common : set_fact] **************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : generate monitor initial keyring] *****************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : read monitor initial keyring if it already exists] ************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : create monitor initial keyring] *******************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : set initial monitor key permissions] **************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : create monitor directory] *************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : ceph monitor mkfs with keyring] *******************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : ceph monitor mkfs without keyring] ****************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : start the monitor service] ************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : enable the ceph-mon.target service] ***************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : include] ******************************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : create filesystem pools] **************************************\
+skipping: [192.168.24.20] => (item=cephfs_data) \
+skipping: [192.168.24.10] => (item=cephfs_data) \
+skipping: [192.168.24.20] => (item=cephfs_metadata) \
+skipping: [192.168.24.10] => (item=cephfs_metadata) \
+skipping: [192.168.24.9] => (item=cephfs_metadata) \
+skipping: [192.168.24.9] => (item=cephfs_data) \
+\
+TASK [ceph-mon : check if ceph filesystem already exists] **********************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : create ceph filesystem] ***************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : allow multimds] ***********************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : set max_mds] **************************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : collect all the pools] ****************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : secure the cluster] *******************************************\
+\
+TASK [ceph-mon : check if a cluster is already running] ************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.9]\
+ok: [192.168.24.10]\
+\
+TASK [ceph-mon : set config and keys paths] ************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : stat for ceph config and keys] ********************************\
+\
+TASK [ceph-mon : fail if we find existing cluster files] ***********************\
+\
+TASK [ceph-mon : include] ******************************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-common/tasks/misc/ntp_redhat.yml for 192.168.24.20, 192.168.24.10, 192.168.24.9\
+\
+TASK [ceph-mon : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-common/tasks/checks/check_ntp_redhat.yml for 192.168.24.20, 192.168.24.10, 192.168.24.9\
+\
+TASK [ceph-mon : check ntp installation on redhat] *****************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+\
+TASK [ceph-mon : install ntp on redhat] ****************************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.9]\
+ok: [192.168.24.10]\
+\
+TASK [ceph-mon : start the ntp service] ****************************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.9]\
+ok: [192.168.24.10]\
+\
+TASK [ceph-mon : include] ******************************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-common/tasks/docker/fetch_image.yml for 192.168.24.20, 192.168.24.10, 192.168.24.9\
+\
+TASK [ceph-mon : pull ceph/daemon image] ***************************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+\
+TASK [ceph-mon : export local ceph dev image] **********************************\
+skipping: [192.168.24.20]\
+\
+TASK [ceph-mon : copy ceph dev image file] *************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : load ceph dev image] ******************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : remove tmp ceph dev image file] *******************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : create bootstrap directories] *********************************\
+changed: [192.168.24.9] => (item=/etc/ceph/)\
+changed: [192.168.24.10] => (item=/etc/ceph/)\
+changed: [192.168.24.9] => (item=/var/lib/ceph/bootstrap-osd)\
+changed: [192.168.24.10] => (item=/var/lib/ceph/bootstrap-osd)\
+changed: [192.168.24.20] => (item=/etc/ceph/)\
+changed: [192.168.24.9] => (item=/var/lib/ceph/bootstrap-mds)\
+changed: [192.168.24.10] => (item=/var/lib/ceph/bootstrap-mds)\
+changed: [192.168.24.20] => (item=/var/lib/ceph/bootstrap-osd)\
+changed: [192.168.24.9] => (item=/var/lib/ceph/bootstrap-rgw)\
+changed: [192.168.24.10] => (item=/var/lib/ceph/bootstrap-rgw)\
+changed: [192.168.24.20] => (item=/var/lib/ceph/bootstrap-mds)\
+changed: [192.168.24.20] => (item=/var/lib/ceph/bootstrap-rgw)\
+\
+TASK [ceph-mon : create a local fetch directory if it does not exist] **********\
+ok: [192.168.24.20 -> localhost]\
+\
+TASK [ceph-mon : generate cluster uuid] ****************************************\
+ok: [192.168.24.10 -> localhost]\
+ok: [192.168.24.9 -> localhost]\
+changed: [192.168.24.20 -> localhost]\
+\
+TASK [ceph-mon : read cluster uuid if it already exists] ***********************\
+ok: [192.168.24.20 -> localhost]\
+ok: [192.168.24.10 -> localhost]\
+ok: [192.168.24.9 -> localhost]\
+\
+TASK [ceph-mon : generate ceph.conf configuration file] ************************\
+changed: [192.168.24.20]\
+changed: [192.168.24.9]\
+changed: [192.168.24.10]\
+\
+TASK [ceph-mon : set config and keys paths] ************************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+\
+TASK [ceph-mon : add mgr keys to config and keys paths] ************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : convert mgr keys to an array] *********************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : merge mgr keys to config and keys paths] **********************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : stat for ceph config and keys] ********************************\
+ok: [192.168.24.20 -> localhost] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.10 -> localhost] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.9 -> localhost] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.20 -> localhost] => (item=/etc/ceph/ceph.client.admin.keyring)\
+ok: [192.168.24.10 -> localhost] => (item=/etc/ceph/ceph.client.admin.keyring)\
+ok: [192.168.24.9 -> localhost] => (item=/etc/ceph/ceph.client.admin.keyring)\
+ok: [192.168.24.20 -> localhost] => (item=/etc/ceph/monmap-ceph)\
+ok: [192.168.24.10 -> localhost] => (item=/etc/ceph/monmap-ceph)\
+ok: [192.168.24.9 -> localhost] => (item=/etc/ceph/monmap-ceph)\
+ok: [192.168.24.20 -> localhost] => (item=/etc/ceph/ceph.mon.keyring)\
+ok: [192.168.24.10 -> localhost] => (item=/etc/ceph/ceph.mon.keyring)\
+ok: [192.168.24.9 -> localhost] => (item=/etc/ceph/ceph.mon.keyring)\
+ok: [192.168.24.20 -> localhost] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+ok: [192.168.24.10 -> localhost] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+ok: [192.168.24.9 -> localhost] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+ok: [192.168.24.10 -> localhost] => (item=/var/lib/ceph/bootstrap-rgw/ceph.keyring)\
+ok: [192.168.24.20 -> localhost] => (item=/var/lib/ceph/bootstrap-rgw/ceph.keyring)\
+ok: [192.168.24.9 -> localhost] => (item=/var/lib/ceph/bootstrap-rgw/ceph.keyring)\
+ok: [192.168.24.20 -> localhost] => (item=/var/lib/ceph/bootstrap-mds/ceph.keyring)\
+ok: [192.168.24.10 -> localhost] => (item=/var/lib/ceph/bootstrap-mds/ceph.keyring)\
+ok: [192.168.24.9 -> localhost] => (item=/var/lib/ceph/bootstrap-mds/ceph.keyring)\
+\
+TASK [ceph-mon : try to fetch ceph config and keys] ****************************\
+skipping: [192.168.24.20] => (item=[u\\'/etc/ceph/ceph.conf\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.conf\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.conf\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.10] => (item=[u\\'/etc/ceph/ceph.conf\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.conf\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.conf\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.9] => (item=[u\\'/etc/ceph/ceph.conf\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.conf\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.conf\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.20] => (item=[u\\'/etc/ceph/ceph.client.admin.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.client.admin.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.client.admin.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.10] => (item=[u\\'/etc/ceph/ceph.client.admin.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.client.admin.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.client.admin.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.9] => (item=[u\\'/etc/ceph/ceph.client.admin.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.client.admin.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.client.admin.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.20] => (item=[u\\'/etc/ceph/monmap-ceph\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/monmap-ceph\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/monmap-ceph\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.10] => (item=[u\\'/etc/ceph/monmap-ceph\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/monmap-ceph\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/monmap-ceph\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.9] => (item=[u\\'/etc/ceph/monmap-ceph\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/monmap-ceph\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/monmap-ceph\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.20] => (item=[u\\'/etc/ceph/ceph.mon.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.mon.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.mon.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.10] => (item=[u\\'/etc/ceph/ceph.mon.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.mon.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.mon.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.9] => (item=[u\\'/etc/ceph/ceph.mon.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.mon.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.mon.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.20] => (item=[u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.10] => (item=[u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.9] => (item=[u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.20] => (item=[u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.10] => (item=[u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.9] => (item=[u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.20] => (item=[u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.10] => (item=[u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+skipping: [192.168.24.9] => (item=[u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}]) \
+\
+TASK [ceph-mon : check if selinux is enabled] **********************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+\
+TASK [ceph-mon : set selinux permissions] **************************************\
+ok: [192.168.24.20] => (item=/etc/ceph)\
+ok: [192.168.24.9] => (item=/etc/ceph)\
+ok: [192.168.24.10] => (item=/etc/ceph)\
+ok: [192.168.24.20] => (item=/var/lib/ceph)\
+ok: [192.168.24.9] => (item=/var/lib/ceph)\
+ok: [192.168.24.10] => (item=/var/lib/ceph)\
+\
+TASK [ceph-mon : set docker_exec_cmd fact] *************************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+\
+TASK [ceph-mon : populate kv_store with default ceph.conf] *********************\
+skipping: [192.168.24.20]\
+\
+TASK [ceph-mon : populate kv_store with custom ceph.conf] **********************\
+skipping: [192.168.24.20]\
+\
+TASK [ceph-mon : delete populate-kv-store docker] ******************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : generate systemd unit file] ***********************************\
+changed: [192.168.24.20]\
+changed: [192.168.24.10]\
+changed: [192.168.24.9]\
+\
+TASK [ceph-mon : enable systemd unit file for mon instance] ********************\
+ok: [192.168.24.20]\
+ok: [192.168.24.9]\
+ok: [192.168.24.10]\
+\
+TASK [ceph-mon : reload systemd unit files] ************************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+\
+TASK [ceph-mon : systemd start mon container] **********************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.9]\
+ok: [192.168.24.10]\
+\
+TASK [ceph-mon : wait for monitor socket to exist] *****************************\
+FAILED - RETRYING: TASK: ceph-mon : wait for monitor socket to exist (5 retries left).\
+FAILED - RETRYING: TASK: ceph-mon : wait for monitor socket to exist (5 retries left).\
+FAILED - RETRYING: TASK: ceph-mon : wait for monitor socket to exist (5 retries left).\
+changed: [192.168.24.9]\
+changed: [192.168.24.20]\
+changed: [192.168.24.10]\
+\
+TASK [ceph-mon : force peer addition as potential bootstrap peer for cluster bringup] ***\
+skipping: [192.168.24.10] => (item=192.168.24.20) \
+skipping: [192.168.24.10] => (item=192.168.24.10) \
+skipping: [192.168.24.9] => (item=192.168.24.20) \
+skipping: [192.168.24.10] => (item=192.168.24.9) \
+skipping: [192.168.24.9] => (item=192.168.24.10) \
+skipping: [192.168.24.9] => (item=192.168.24.9) \
+ok: [192.168.24.20] => (item=192.168.24.20)\
+ok: [192.168.24.20] => (item=192.168.24.10)\
+ok: [192.168.24.20] => (item=192.168.24.9)\
+\
+TASK [ceph-mon : push ceph files to the ansible server] ************************\
+changed: [192.168.24.20] => (item=[u\\'/etc/ceph/ceph.conf\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.conf\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.conf\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+ok: [192.168.24.9] => (item=[u\\'/etc/ceph/ceph.conf\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.conf\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.conf\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+ok: [192.168.24.10] => (item=[u\\'/etc/ceph/ceph.conf\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.conf\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.conf\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.9] => (item=[u\\'/etc/ceph/ceph.client.admin.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.client.admin.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.client.admin.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.20] => (item=[u\\'/etc/ceph/ceph.client.admin.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.client.admin.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.client.admin.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.10] => (item=[u\\'/etc/ceph/ceph.client.admin.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.client.admin.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.client.admin.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.20] => (item=[u\\'/etc/ceph/monmap-ceph\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/monmap-ceph\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/monmap-ceph\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.9] => (item=[u\\'/etc/ceph/monmap-ceph\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/monmap-ceph\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/monmap-ceph\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.10] => (item=[u\\'/etc/ceph/monmap-ceph\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/monmap-ceph\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/monmap-ceph\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.9] => (item=[u\\'/etc/ceph/ceph.mon.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.mon.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.mon.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.20] => (item=[u\\'/etc/ceph/ceph.mon.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.mon.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.mon.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.10] => (item=[u\\'/etc/ceph/ceph.mon.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/etc/ceph/ceph.mon.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//etc/ceph/ceph.mon.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.20] => (item=[u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.9] => (item=[u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.10] => (item=[u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-osd/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.20] => (item=[u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.9] => (item=[u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.10] => (item=[u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-rgw/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.20] => (item=[u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.9] => (item=[u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+changed: [192.168.24.10] => (item=[u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', {u\\'_ansible_parsed\\': True, u\\'stat\\': {u\\'exists\\': False}, u\\'_ansible_item_result\\': True, u\\'_ansible_no_log\\': False, u\\'item\\': u\\'/var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'changed\\': False, u\\'failed\\': False, u\\'invocation\\': {u\\'module_name\\': u\\'stat\\', u\\'module_args\\': {u\\'checksum_algorithm\\': u\\'sha1\\', u\\'mime\\': False, u\\'get_checksum\\': True, u\\'follow\\': False, u\\'path\\': u\\'/tmp/ceph-ansible-fetch//docker_mon_files//var/lib/ceph/bootstrap-mds/ceph.keyring\\', u\\'get_md5\\': True}}, u\\'_ansible_delegated_vars\\': {u\\'ansible_host\\': u\\'localhost\\'}, u\\'failed_when_result\\': False}])\
+\
+TASK [ceph-mon : create ceph rest api keyring when mon is containerized] *******\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-mon/tasks/set_osd_pool_default_pg_num.yml for 192.168.24.20, 192.168.24.10, 192.168.24.9\
+\
+TASK [ceph-mon : check if does global key exist in ceph_conf_overrides] ********\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+\
+TASK [ceph-mon : check if ceph_conf_overrides.global.osd_pool_default_pg_num is set] ***\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : get default value for osd_pool_default_pg_num] ****************\
+ok: [192.168.24.20]\
+\
+TASK [ceph-mon : set_fact] *****************************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : set_fact] *****************************************************\
+ok: [192.168.24.20]\
+ok: [192.168.24.10]\
+ok: [192.168.24.9]\
+\
+TASK [ceph-mon : set_fact] *****************************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : include] ******************************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : create ceph mgr keyring(s) when mon is containerized] *********\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : install calamari server] **************************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+TASK [ceph-mon : increase calamari logging level when debug is on] *************\
+skipping: [192.168.24.20] => (item=cthulhu) \
+skipping: [192.168.24.10] => (item=calamari_web) \
+skipping: [192.168.24.10] => (item=cthulhu) \
+skipping: [192.168.24.9] => (item=cthulhu) \
+skipping: [192.168.24.9] => (item=calamari_web) \
+skipping: [192.168.24.20] => (item=calamari_web) \
+\
+TASK [ceph-mon : initialize the calamari server api] ***************************\
+skipping: [192.168.24.20]\
+skipping: [192.168.24.10]\
+skipping: [192.168.24.9]\
+\
+PLAY [osds] ********************************************************************\
+\
+TASK [ceph.ceph-common : fail on unsupported system] ***************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : fail on unsupported architecture] *********************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : fail on unsupported distribution] *********************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : fail on unsupported distribution for red hat ceph storage] ***\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : fail on unsupported distribution for ubuntu cloud archive] ***\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : fail on unsupported ansible version] ******************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : fail if systemd is not present] ***********************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : make sure an installation origin was chosen] **********\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : make sure an installation source was chosen] **********\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : verify that a method was chosen for red hat storage] **\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.7]\
+skipping: [192.168.24.15]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18] => (item={\\'key\\': u\\'firefly\\', \\'value\\': 0.8}) \
+skipping: [192.168.24.18] => (item={\\'key\\': u\\'giant\\', \\'value\\': 0.87}) \
+skipping: [192.168.24.15] => (item={\\'key\\': u\\'firefly\\', \\'value\\': 0.8}) \
+skipping: [192.168.24.15] => (item={\\'key\\': u\\'giant\\', \\'value\\': 0.87}) \
+skipping: [192.168.24.7] => (item={\\'key\\': u\\'firefly\\', \\'value\\': 0.8}) \
+skipping: [192.168.24.18] => (item={\\'key\\': u\\'infernalis\\', \\'value\\': 9}) \
+skipping: [192.168.24.18] => (item={\\'key\\': u\\'hammer\\', \\'value\\': 0.94}) \
+skipping: [192.168.24.15] => (item={\\'key\\': u\\'infernalis\\', \\'value\\': 9}) \
+skipping: [192.168.24.15] => (item={\\'key\\': u\\'hammer\\', \\'value\\': 0.94}) \
+skipping: [192.168.24.18] => (item={\\'key\\': u\\'kraken\\', \\'value\\': 11}) \
+skipping: [192.168.24.18] => (item={\\'key\\': u\\'emperor\\', \\'value\\': 0.72}) \
+skipping: [192.168.24.7] => (item={\\'key\\': u\\'hammer\\', \\'value\\': 0.94}) \
+skipping: [192.168.24.15] => (item={\\'key\\': u\\'kraken\\', \\'value\\': 11}) \
+skipping: [192.168.24.7] => (item={\\'key\\': u\\'infernalis\\', \\'value\\': 9}) \
+skipping: [192.168.24.15] => (item={\\'key\\': u\\'emperor\\', \\'value\\': 0.72}) \
+skipping: [192.168.24.18] => (item={\\'key\\': u\\'jewel\\', \\'value\\': 10}) \
+skipping: [192.168.24.7] => (item={\\'key\\': u\\'kraken\\', \\'value\\': 11}) \
+skipping: [192.168.24.7] => (item={\\'key\\': u\\'emperor\\', \\'value\\': 0.72}) \
+skipping: [192.168.24.15] => (item={\\'key\\': u\\'jewel\\', \\'value\\': 10}) \
+skipping: [192.168.24.18] => (item={\\'key\\': u\\'dumpling\\', \\'value\\': 0.67}) \
+skipping: [192.168.24.15] => (item={\\'key\\': u\\'dumpling\\', \\'value\\': 0.67}) \
+skipping: [192.168.24.7] => (item={\\'key\\': u\\'jewel\\', \\'value\\': 10}) \
+skipping: [192.168.24.7] => (item={\\'key\\': u\\'dumpling\\', \\'value\\': 0.67}) \
+skipping: [192.168.24.7] => (item={\\'key\\': u\\'giant\\', \\'value\\': 0.87}) \
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : include] **********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : get ceph version] *************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : is ceph running already?] *****************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : create a local fetch directory if it does not exist] **\
+skipping: [192.168.24.18]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : check if /tmp/ceph-ansible-fetch/ directory exists] ***\
+skipping: [192.168.24.18]\
+\
+TASK [ceph.ceph-common : check if /var/lib/ceph/mon/{{ cluster }}-{{ monitor_name\\xc2\\xa0}}/keyring already exists] ***\
+skipping: [192.168.24.18]\
+\
+TASK [ceph.ceph-common : fail if /var/lib/ceph/mon/{{ cluster }}-{{ monitor_name\\xc2\\xa0}}/keyring doesn\\'t exist] ***\
+skipping: [192.168.24.18]\
+\
+TASK [ceph.ceph-common : get existing initial mon keyring if it already exists but not monitor_keyring.conf in /tmp/ceph-ansible-fetch/] ***\
+skipping: [192.168.24.18]\
+\
+TASK [ceph.ceph-common : test existing initial mon keyring] ********************\
+skipping: [192.168.24.18]\
+\
+TASK [ceph.ceph-common : fail if initial mon keyring found doesn\\'t work] *******\
+skipping: [192.168.24.18]\
+\
+TASK [ceph.ceph-common : write initial mon keyring in /tmp/ceph-ansible-fetch//monitor_keyring.conf if it doesn\\'t exist] ***\
+skipping: [192.168.24.18]\
+\
+TASK [ceph.ceph-common : put initial mon keyring in mon kv store] **************\
+skipping: [192.168.24.18]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : set_fact] *********************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : check for a ceph socket] ******************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : check for a rados gateway socket] *********************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : create ceph initial directories] **********************\
+skipping: [192.168.24.18] => (item=/etc/ceph) \
+skipping: [192.168.24.15] => (item=/etc/ceph) \
+skipping: [192.168.24.18] => (item=/var/lib/ceph/) \
+skipping: [192.168.24.15] => (item=/var/lib/ceph/) \
+skipping: [192.168.24.18] => (item=/var/lib/ceph/mon) \
+skipping: [192.168.24.7] => (item=/etc/ceph) \
+skipping: [192.168.24.15] => (item=/var/lib/ceph/mon) \
+skipping: [192.168.24.7] => (item=/var/lib/ceph/) \
+skipping: [192.168.24.18] => (item=/var/lib/ceph/osd) \
+skipping: [192.168.24.18] => (item=/var/lib/ceph/mds) \
+skipping: [192.168.24.15] => (item=/var/lib/ceph/osd) \
+skipping: [192.168.24.7] => (item=/var/lib/ceph/mon) \
+skipping: [192.168.24.18] => (item=/var/lib/ceph/tmp) \
+skipping: [192.168.24.15] => (item=/var/lib/ceph/mds) \
+skipping: [192.168.24.7] => (item=/var/lib/ceph/osd) \
+skipping: [192.168.24.18] => (item=/var/lib/ceph/radosgw) \
+skipping: [192.168.24.7] => (item=/var/lib/ceph/mds) \
+skipping: [192.168.24.15] => (item=/var/lib/ceph/tmp) \
+skipping: [192.168.24.15] => (item=/var/lib/ceph/radosgw) \
+skipping: [192.168.24.7] => (item=/var/lib/ceph/tmp) \
+skipping: [192.168.24.18] => (item=/var/lib/ceph/bootstrap-mds) \
+skipping: [192.168.24.7] => (item=/var/lib/ceph/radosgw) \
+skipping: [192.168.24.15] => (item=/var/lib/ceph/bootstrap-rgw) \
+skipping: [192.168.24.18] => (item=/var/lib/ceph/bootstrap-osd) \
+skipping: [192.168.24.7] => (item=/var/lib/ceph/bootstrap-rgw) \
+skipping: [192.168.24.15] => (item=/var/lib/ceph/bootstrap-osd) \
+skipping: [192.168.24.7] => (item=/var/lib/ceph/bootstrap-mds) \
+skipping: [192.168.24.15] => (item=/var/lib/ceph/bootstrap-mds) \
+skipping: [192.168.24.7] => (item=/var/lib/ceph/bootstrap-osd) \
+skipping: [192.168.24.18] => (item=/var/lib/ceph/bootstrap-rgw) \
+\
+TASK [ceph.ceph-common : generate cluster fsid] ********************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : reuse cluster fsid when cluster is already running] ***\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : read cluster fsid if it already exists] ***************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : create ceph conf directory and assemble directory] ****\
+skipping: [192.168.24.18] => (item=/etc/ceph/) \
+skipping: [192.168.24.18] => (item=/etc/ceph/ceph.d/) \
+skipping: [192.168.24.15] => (item=/etc/ceph/) \
+skipping: [192.168.24.15] => (item=/etc/ceph/ceph.d/) \
+skipping: [192.168.24.7] => (item=/etc/ceph/) \
+skipping: [192.168.24.7] => (item=/etc/ceph/ceph.d/) \
+\
+TASK [ceph.ceph-common : generate ceph configuration file: ceph.conf] **********\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : assemble ceph.conf and fragments] *********************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : create rbd client directory] **************************\
+skipping: [192.168.24.18] => (item=/var/run/ceph) \
+skipping: [192.168.24.15] => (item=/var/run/ceph) \
+skipping: [192.168.24.18] => (item=/var/log/ceph) \
+skipping: [192.168.24.7] => (item=/var/run/ceph) \
+skipping: [192.168.24.15] => (item=/var/log/ceph) \
+skipping: [192.168.24.7] => (item=/var/log/ceph) \
+\
+TASK [ceph.ceph-common : configure cluster name] *******************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : check /etc/default/ceph exist] ************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : configure cluster name] *******************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-common : configure cluster name] *******************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : fail if systemd is not present] ****************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : check if it is atomic host] ********************\
+ok: [192.168.24.18]\
+ok: [192.168.24.7]\
+ok: [192.168.24.15]\
+\
+TASK [ceph.ceph-docker-common : set fact for using atomic host] ****************\
+ok: [192.168.24.18]\
+ok: [192.168.24.15]\
+ok: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : allow apt to use a repository over https (debian)] ***\
+skipping: [192.168.24.18] => (item=[]) \
+skipping: [192.168.24.15] => (item=[]) \
+skipping: [192.168.24.7] => (item=[]) \
+\
+TASK [ceph.ceph-docker-common : add docker\\'s gpg key] **************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : add docker and debian testing repository] ******\
+skipping: [192.168.24.18] => (item=deb https://apt.dockerproject.org/repo/ debian-Core main) \
+skipping: [192.168.24.15] => (item=deb https://apt.dockerproject.org/repo/ debian-Core main) \
+skipping: [192.168.24.18] => (item=deb http://http.us.debian.org/debian/ testing contrib main) \
+skipping: [192.168.24.7] => (item=deb https://apt.dockerproject.org/repo/ debian-Core main) \
+skipping: [192.168.24.15] => (item=deb http://http.us.debian.org/debian/ testing contrib main) \
+skipping: [192.168.24.7] => (item=deb http://http.us.debian.org/debian/ testing contrib main) \
+\
+TASK [ceph.ceph-docker-common : install pip from testing on debian] ************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : install docker-py via pip for debian] **********\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : install docker on debian] **********************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : install six via pip] ***************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : install docker on ubuntu] **********************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : enable extras on centos] ***********************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : install python-six] ****************************\
+ok: [192.168.24.18]\
+ok: [192.168.24.15]\
+ok: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : install python-docker-py on red hat / centos] **\
+changed: [192.168.24.18]\
+changed: [192.168.24.7]\
+changed: [192.168.24.15]\
+\
+TASK [ceph.ceph-docker-common : install python-docker on ubuntu] ***************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : install docker on red hat / centos] ************\
+ok: [192.168.24.18]\
+ok: [192.168.24.15]\
+ok: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : pause after docker install before starting (on openstack vms)] ***\
+skipping: [192.168.24.18]\
+\
+TASK [ceph.ceph-docker-common : start docker service] **************************\
+changed: [192.168.24.15]\
+changed: [192.168.24.7]\
+changed: [192.168.24.18]\
+\
+TASK [ceph.ceph-docker-common : install ntp] ***********************************\
+ok: [192.168.24.18]\
+ok: [192.168.24.7]\
+ok: [192.168.24.15]\
+\
+TASK [ceph.ceph-docker-common : set_fact] **************************************\
+ok: [192.168.24.18]\
+ok: [192.168.24.15]\
+ok: [192.168.24.7]\
+\
+TASK [ceph.ceph-docker-common : set_fact] **************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : make sure public_network configured] **************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : make sure cluster_network configured] *************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : make sure journal_size configured] ****************************\
+ok: [192.168.24.18] => {\
+    "msg": "WARNING: journal_size is configured to less than 5GB. This is not recommended and can lead to severe issues."\
+}\
+ok: [192.168.24.15] => {\
+    "msg": "WARNING: journal_size is configured to less than 5GB. This is not recommended and can lead to severe issues."\
+}\
+ok: [192.168.24.7] => {\
+    "msg": "WARNING: journal_size is configured to less than 5GB. This is not recommended and can lead to severe issues."\
+}\
+\
+TASK [ceph-osd : make sure an osd scenario was chosen] *************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : verify only one osd scenario was chosen] **********************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : verify devices have been provided] ****************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : verify journal devices have been provided] ********************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : verify directories have been provided] ************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-osd/tasks/./docker/main.yml for 192.168.24.18, 192.168.24.15, 192.168.24.7\
+\
+TASK [ceph-osd : check if a cluster is already running] ************************\
+ok: [192.168.24.18]\
+ok: [192.168.24.15]\
+ok: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-common/tasks/misc/ntp_redhat.yml for 192.168.24.18, 192.168.24.15, 192.168.24.7\
+\
+TASK [ceph-osd : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-common/tasks/checks/check_ntp_redhat.yml for 192.168.24.18, 192.168.24.15, 192.168.24.7\
+\
+TASK [ceph-osd : check ntp installation on redhat] *****************************\
+ok: [192.168.24.18]\
+ok: [192.168.24.7]\
+ok: [192.168.24.15]\
+\
+TASK [ceph-osd : install ntp on redhat] ****************************************\
+ok: [192.168.24.18]\
+ok: [192.168.24.15]\
+ok: [192.168.24.7]\
+\
+TASK [ceph-osd : start the ntp service] ****************************************\
+ok: [192.168.24.18]\
+ok: [192.168.24.15]\
+ok: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-common/tasks/docker/fetch_image.yml for 192.168.24.18, 192.168.24.15, 192.168.24.7\
+\
+TASK [ceph-osd : pull ceph/daemon image] ***************************************\
+ok: [192.168.24.18]\
+ok: [192.168.24.15]\
+ok: [192.168.24.7]\
+\
+TASK [ceph-osd : export local ceph dev image] **********************************\
+skipping: [192.168.24.18]\
+\
+TASK [ceph-osd : copy ceph dev image file] *************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : load ceph dev image] ******************************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : remove tmp ceph dev image file] *******************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-osd/tasks/docker/dirs_permissions.yml for 192.168.24.18, 192.168.24.15, 192.168.24.7\
+\
+TASK [ceph-osd : create bootstrap directories] *********************************\
+changed: [192.168.24.18] => (item=/etc/ceph/)\
+changed: [192.168.24.15] => (item=/etc/ceph/)\
+changed: [192.168.24.7] => (item=/etc/ceph/)\
+changed: [192.168.24.18] => (item=/var/lib/ceph/bootstrap-osd)\
+changed: [192.168.24.7] => (item=/var/lib/ceph/bootstrap-osd)\
+changed: [192.168.24.15] => (item=/var/lib/ceph/bootstrap-osd)\
+\
+TASK [ceph-osd : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-osd/tasks/docker/fetch_configs.yml for 192.168.24.18, 192.168.24.15, 192.168.24.7\
+\
+TASK [ceph-osd : set config and keys paths] ************************************\
+ok: [192.168.24.18]\
+ok: [192.168.24.7]\
+ok: [192.168.24.15]\
+\
+TASK [ceph-osd : wait for ceph.conf and keys] **********************************\
+ok: [192.168.24.18 -> localhost] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.15 -> localhost] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.7 -> localhost] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.7 -> localhost] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+ok: [192.168.24.18 -> localhost] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+ok: [192.168.24.15 -> localhost] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+\
+TASK [ceph-osd : stat for ceph config and keys] ********************************\
+ok: [192.168.24.18 -> localhost] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.15 -> localhost] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.7 -> localhost] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.18 -> localhost] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+ok: [192.168.24.15 -> localhost] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+ok: [192.168.24.7 -> localhost] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+\
+TASK [ceph-osd : try to copy ceph config and keys] *****************************\
+ok: [192.168.24.18] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.7] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.15] => (item=/etc/ceph/ceph.conf)\
+ok: [192.168.24.18] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+ok: [192.168.24.7] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+ok: [192.168.24.15] => (item=/var/lib/ceph/bootstrap-osd/ceph.keyring)\
+\
+TASK [ceph-osd : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-osd/tasks/docker/selinux.yml for 192.168.24.18, 192.168.24.15, 192.168.24.7\
+\
+TASK [ceph-osd : check if selinux is enabled] **********************************\
+ok: [192.168.24.18]\
+ok: [192.168.24.15]\
+ok: [192.168.24.7]\
+\
+TASK [ceph-osd : set selinux permissions] **************************************\
+ok: [192.168.24.18] => (item=/etc/ceph)\
+ok: [192.168.24.15] => (item=/etc/ceph)\
+ok: [192.168.24.7] => (item=/etc/ceph)\
+ok: [192.168.24.18] => (item=/var/lib/ceph)\
+ok: [192.168.24.7] => (item=/var/lib/ceph)\
+ok: [192.168.24.15] => (item=/var/lib/ceph)\
+\
+TASK [ceph-osd : include] ******************************************************\
+included: /usr/share/ceph-ansible/roles/ceph-osd/tasks/docker/start_docker_osd.yml for 192.168.24.18, 192.168.24.15, 192.168.24.7\
+\
+TASK [ceph-osd : umount ceph disk (if on openstack)] ***************************\
+skipping: [192.168.24.18]\
+skipping: [192.168.24.15]\
+skipping: [192.168.24.7]\
+\
+TASK [ceph-osd : verify if the disk was already prepared] **********************\
+changed: [192.168.24.15] => (item=/dev/vdb)\
+changed: [192.168.24.7] => (item=/dev/vdb)\
+changed: [192.168.24.18] => (item=/dev/vdb)\
+changed: [192.168.24.18] => (item=/dev/vdc)\
+changed: [192.168.24.7] => (item=/dev/vdc)\
+changed: [192.168.24.15] => (item=/dev/vdc)\
+\
+TASK [ceph-osd : prepare ceph osd disk] ****************************************\
+failed: [192.168.24.7] (item=[u\\'/dev/vdb\\', {u\\'_ansible_parsed\\': True, u\\'cmd\\': u"lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", u\\'end\\': u\\'2017-06-15 14:57:17.805388\\', u\\'_ansible_no_log\\': False, u\\'stdout\\': u\\'\\', u\\'_ansible_item_result\\': True, u\\'changed\\': True, u\\'item\\': u\\'/dev/vdb\\', u\\'delta\\': u\\'0:00:00.005764\\', u\\'stderr\\': u\\'\\', u\\'rc\\': 1, u\\'invocation\\': {u\\'module_name\\': u\\'command\\', u\\'module_args\\': {u\\'creates\\': None, u\\'executable\\': None, u\\'_uses_shell\\': True, u\\'_raw_params\\': u"lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", u\\'removes\\': None, u\\'warn\\': True, u\\'chdir\\': None}}, u\\'stdout_lines\\': [], u\\'failed_when_result\\': False, u\\'start\\': u\\'2017-06-15 14:57:17.799624\\', u\\'warnings\\': [], u\\'failed\\': False}]) => {"changed": true, "cmd": "docker run --net=host --pid=host --privileged=true --name=\\\\"ceph-osd-prepare-overcloud-cephstorage-0-devdevvdb\\\\" -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ -v /dev:/dev -v /etc/localtime:/etc/localtime:ro -e \\\\"OSD_DEVICE=/dev/vdb\\\\" -e \\\\"OSD_JOURNAL_UUID=$(python -c \\\\"import uuid; print uuid.uuid5(uuid.NAMESPACE_DNS, \\'ea4bb35ac7b55a78c3c4fb8cdb4b7f65/dev/vdb\\')\\\\")\\\\" -e CEPH_DAEMON=OSD_CEPH_DISK_PREPARE -e CLUSTER=ceph -e OSD_JOURNAL_SIZE=256 -e OSD_FORCE_ZAP=1 \\\\"docker.io/ceph/daemon:tag-build-master-jewel-centos-7\\\\"", "delta": "0:00:10.485893", "end": "2017-06-15 14:57:28.886401", "failed": true, "item": ["/dev/vdb", {"_ansible_item_result": true, "_ansible_no_log": false, "_ansible_parsed": true, "changed": true, "cmd": "lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", "delta": "0:00:00.005764", "end": "2017-06-15 14:57:17.805388", "failed": false, "failed_when_result": false, "invocation": {"module_args": {"_raw_params": "lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", "_uses_shell": true, "chdir": null, "creates": null, "executable": null, "removes": null, "warn": true}, "module_name": "command"}, "item": "/dev/vdb", "rc": 1, "start": "2017-06-15 14:57:17.799624", "stderr": "", "stdout": "", "stdout_lines": [], "warnings": []}], "rc": 1, "start": "2017-06-15 14:57:18.400508", "stderr": "", "stdout": "2017-06-15 14:57:18  /entrypoint.sh: static: does not generate config", "stdout_lines": ["2017-06-15 14:57:18  /entrypoint.sh: static: does not generate config"], "warnings": []}\
+failed: [192.168.24.18] (item=[u\\'/dev/vdb\\', {u\\'_ansible_parsed\\': True, u\\'cmd\\': u"lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", u\\'end\\': u\\'2017-06-15 14:57:17.789597\\', u\\'_ansible_no_log\\': False, u\\'stdout\\': u\\'\\', u\\'_ansible_item_result\\': True, u\\'changed\\': True, u\\'item\\': u\\'/dev/vdb\\', u\\'delta\\': u\\'0:00:00.005859\\', u\\'stderr\\': u\\'\\', u\\'rc\\': 1, u\\'invocation\\': {u\\'module_name\\': u\\'command\\', u\\'module_args\\': {u\\'creates\\': None, u\\'executable\\': None, u\\'_uses_shell\\': True, u\\'_raw_params\\': u"lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", u\\'removes\\': None, u\\'warn\\': True, u\\'chdir\\': None}}, u\\'stdout_lines\\': [], u\\'failed_when_result\\': False, u\\'start\\': u\\'2017-06-15 14:57:17.783738\\', u\\'warnings\\': [], u\\'failed\\': False}]) => {"changed": true, "cmd": "docker run --net=host --pid=host --privileged=true --name=\\\\"ceph-osd-prepare-overcloud-cephstorage-2-devdevvdb\\\\" -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ -v /dev:/dev -v /etc/localtime:/etc/localtime:ro -e \\\\"OSD_DEVICE=/dev/vdb\\\\" -e \\\\"OSD_JOURNAL_UUID=$(python -c \\\\"import uuid; print uuid.uuid5(uuid.NAMESPACE_DNS, \\'ea4bb35ac7b55a78c3c4fb8cdb4b7f65/dev/vdb\\')\\\\")\\\\" -e CEPH_DAEMON=OSD_CEPH_DISK_PREPARE -e CLUSTER=ceph -e OSD_JOURNAL_SIZE=256 -e OSD_FORCE_ZAP=1 \\\\"docker.io/ceph/daemon:tag-build-master-jewel-centos-7\\\\"", "delta": "0:00:10.499302", "end": "2017-06-15 14:57:28.891558", "failed": true, "item": ["/dev/vdb", {"_ansible_item_result": true, "_ansible_no_log": false, "_ansible_parsed": true, "changed": true, "cmd": "lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", "delta": "0:00:00.005859", "end": "2017-06-15 14:57:17.789597", "failed": false, "failed_when_result": false, "invocation": {"module_args": {"_raw_params": "lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", "_uses_shell": true, "chdir": null, "creates": null, "executable": null, "removes": null, "warn": true}, "module_name": "command"}, "item": "/dev/vdb", "rc": 1, "start": "2017-06-15 14:57:17.783738", "stderr": "", "stdout": "", "stdout_lines": [], "warnings": []}], "rc": 1, "start": "2017-06-15 14:57:18.392256", "stderr": "", "stdout": "2017-06-15 14:57:18  /entrypoint.sh: static: does not generate config", "stdout_lines": ["2017-06-15 14:57:18  /entrypoint.sh: static: does not generate config"], "warnings": []}\
+failed: [192.168.24.15] (item=[u\\'/dev/vdb\\', {u\\'_ansible_parsed\\': True, u\\'cmd\\': u"lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", u\\'end\\': u\\'2017-06-15 14:57:17.808096\\', u\\'_ansible_no_log\\': False, u\\'stdout\\': u\\'\\', u\\'_ansible_item_result\\': True, u\\'changed\\': True, u\\'item\\': u\\'/dev/vdb\\', u\\'delta\\': u\\'0:00:00.006725\\', u\\'stderr\\': u\\'\\', u\\'rc\\': 1, u\\'invocation\\': {u\\'module_name\\': u\\'command\\', u\\'module_args\\': {u\\'creates\\': None, u\\'executable\\': None, u\\'_uses_shell\\': True, u\\'_raw_params\\': u"lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", u\\'removes\\': None, u\\'warn\\': True, u\\'chdir\\': None}}, u\\'stdout_lines\\': [], u\\'failed_when_result\\': False, u\\'start\\': u\\'2017-06-15 14:57:17.801371\\', u\\'warnings\\': [], u\\'failed\\': False}]) => {"changed": true, "cmd": "docker run --net=host --pid=host --privileged=true --name=\\\\"ceph-osd-prepare-overcloud-cephstorage-1-devdevvdb\\\\" -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ -v /dev:/dev -v /etc/localtime:/etc/localtime:ro -e \\\\"OSD_DEVICE=/dev/vdb\\\\" -e \\\\"OSD_JOURNAL_UUID=$(python -c \\\\"import uuid; print uuid.uuid5(uuid.NAMESPACE_DNS, \\'ea4bb35ac7b55a78c3c4fb8cdb4b7f65/dev/vdb\\')\\\\")\\\\" -e CEPH_DAEMON=OSD_CEPH_DISK_PREPARE -e CLUSTER=ceph -e OSD_JOURNAL_SIZE=256 -e OSD_FORCE_ZAP=1 \\\\"docker.io/ceph/daemon:tag-build-master-jewel-centos-7\\\\"", "delta": "0:00:10.503164", "end": "2017-06-15 14:57:28.906650", "failed": true, "item": ["/dev/vdb", {"_ansible_item_result": true, "_ansible_no_log": false, "_ansible_parsed": true, "changed": true, "cmd": "lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", "delta": "0:00:00.006725", "end": "2017-06-15 14:57:17.808096", "failed": false, "failed_when_result": false, "invocation": {"module_args": {"_raw_params": "lsblk -o PARTLABEL /dev/vdb | grep -sq \\'ceph\\'", "_uses_shell": true, "chdir": null, "creates": null, "executable": null, "removes": null, "warn": true}, "module_name": "command"}, "item": "/dev/vdb", "rc": 1, "start": "2017-06-15 14:57:17.801371", "stderr": "", "stdout": "", "stdout_lines": [], "warnings": []}], "rc": 1, "start": "2017-06-15 14:57:18.403486", "stderr": "", "stdout": "2017-06-15 14:57:18  /entrypoint.sh: static: does not generate config", "stdout_lines": ["2017-06-15 14:57:18  /entrypoint.sh: static: does not generate config"], "warnings": []}\
+failed: [192.168.24.7] (item=[u\\'/dev/vdc\\', {u\\'_ansible_parsed\\': True, u\\'cmd\\': u"lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", u\\'end\\': u\\'2017-06-15 14:57:18.065436\\', u\\'_ansible_no_log\\': False, u\\'stdout\\': u\\'\\', u\\'_ansible_item_result\\': True, u\\'changed\\': True, u\\'item\\': u\\'/dev/vdc\\', u\\'delta\\': u\\'0:00:00.004880\\', u\\'stderr\\': u\\'\\', u\\'rc\\': 1, u\\'invocation\\': {u\\'module_name\\': u\\'command\\', u\\'module_args\\': {u\\'creates\\': None, u\\'executable\\': None, u\\'_uses_shell\\': True, u\\'_raw_params\\': u"lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", u\\'removes\\': None, u\\'warn\\': True, u\\'chdir\\': None}}, u\\'stdout_lines\\': [], u\\'failed_when_result\\': False, u\\'start\\': u\\'2017-06-15 14:57:18.060556\\', u\\'warnings\\': [], u\\'failed\\': False}]) => {"changed": true, "cmd": "docker run --net=host --pid=host --privileged=true --name=\\\\"ceph-osd-prepare-overcloud-cephstorage-0-devdevvdc\\\\" -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ -v /dev:/dev -v /etc/localtime:/etc/localtime:ro -e \\\\"OSD_DEVICE=/dev/vdc\\\\" -e \\\\"OSD_JOURNAL_UUID=$(python -c \\\\"import uuid; print uuid.uuid5(uuid.NAMESPACE_DNS, \\'ea4bb35ac7b55a78c3c4fb8cdb4b7f65/dev/vdc\\')\\\\")\\\\" -e CEPH_DAEMON=OSD_CEPH_DISK_PREPARE -e CLUSTER=ceph -e OSD_JOURNAL_SIZE=256 -e OSD_FORCE_ZAP=1 \\\\"docker.io/ceph/daemon:tag-build-master-jewel-centos-7\\\\"", "delta": "0:00:10.399347", "end": "2017-06-15 14:57:39.582179", "failed": true, "item": ["/dev/vdc", {"_ansible_item_result": true, "_ansible_no_log": false, "_ansible_parsed": true, "changed": true, "cmd": "lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", "delta": "0:00:00.004880", "end": "2017-06-15 14:57:18.065436", "failed": false, "failed_when_result": false, "invocation": {"module_args": {"_raw_params": "lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", "_uses_shell": true, "chdir": null, "creates": null, "executable": null, "removes": null, "warn": true}, "module_name": "command"}, "item": "/dev/vdc", "rc": 1, "start": "2017-06-15 14:57:18.060556", "stderr": "", "stdout": "", "stdout_lines": [], "warnings": []}], "rc": 1, "start": "2017-06-15 14:57:29.182832", "stderr": "", "stdout": "2017-06-15 14:57:29  /entrypoint.sh: static: does not generate config", "stdout_lines": ["2017-06-15 14:57:29  /entrypoint.sh: static: does not generate config"], "warnings": []}\
+failed: [192.168.24.18] (item=[u\\'/dev/vdc\\', {u\\'_ansible_parsed\\': True, u\\'cmd\\': u"lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", u\\'end\\': u\\'2017-06-15 14:57:18.049020\\', u\\'_ansible_no_log\\': False, u\\'stdout\\': u\\'\\', u\\'_ansible_item_result\\': True, u\\'changed\\': True, u\\'item\\': u\\'/dev/vdc\\', u\\'delta\\': u\\'0:00:00.005265\\', u\\'stderr\\': u\\'\\', u\\'rc\\': 1, u\\'invocation\\': {u\\'module_name\\': u\\'command\\', u\\'module_args\\': {u\\'creates\\': None, u\\'executable\\': None, u\\'_uses_shell\\': True, u\\'_raw_params\\': u"lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", u\\'removes\\': None, u\\'warn\\': True, u\\'chdir\\': None}}, u\\'stdout_lines\\': [], u\\'failed_when_result\\': False, u\\'start\\': u\\'2017-06-15 14:57:18.043755\\', u\\'warnings\\': [], u\\'failed\\': False}]) => {"changed": true, "cmd": "docker run --net=host --pid=host --privileged=true --name=\\\\"ceph-osd-prepare-overcloud-cephstorage-2-devdevvdc\\\\" -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ -v /dev:/dev -v /etc/localtime:/etc/localtime:ro -e \\\\"OSD_DEVICE=/dev/vdc\\\\" -e \\\\"OSD_JOURNAL_UUID=$(python -c \\\\"import uuid; print uuid.uuid5(uuid.NAMESPACE_DNS, \\'ea4bb35ac7b55a78c3c4fb8cdb4b7f65/dev/vdc\\')\\\\")\\\\" -e CEPH_DAEMON=OSD_CEPH_DISK_PREPARE -e CLUSTER=ceph -e OSD_JOURNAL_SIZE=256 -e OSD_FORCE_ZAP=1 \\\\"docker.io/ceph/daemon:tag-build-master-jewel-centos-7\\\\"", "delta": "0:00:10.421420", "end": "2017-06-15 14:57:39.599428", "failed": true, "item": ["/dev/vdc", {"_ansible_item_result": true, "_ansible_no_log": false, "_ansible_parsed": true, "changed": true, "cmd": "lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", "delta": "0:00:00.005265", "end": "2017-06-15 14:57:18.049020", "failed": false, "failed_when_result": false, "invocation": {"module_args": {"_raw_params": "lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", "_uses_shell": true, "chdir": null, "creates": null, "executable": null, "removes": null, "warn": true}, "module_name": "command"}, "item": "/dev/vdc", "rc": 1, "start": "2017-06-15 14:57:18.043755", "stderr": "", "stdout": "", "stdout_lines": [], "warnings": []}], "rc": 1, "start": "2017-06-15 14:57:29.178008", "stderr": "", "stdout": "2017-06-15 14:57:29  /entrypoint.sh: static: does not generate config", "stdout_lines": ["2017-06-15 14:57:29  /entrypoint.sh: static: does not generate config"], "warnings": []}\
+failed: [192.168.24.15] (item=[u\\'/dev/vdc\\', {u\\'_ansible_parsed\\': True, u\\'cmd\\': u"lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", u\\'end\\': u\\'2017-06-15 14:57:18.074092\\', u\\'_ansible_no_log\\': False, u\\'stdout\\': u\\'\\', u\\'_ansible_item_result\\': True, u\\'changed\\': True, u\\'item\\': u\\'/dev/vdc\\', u\\'delta\\': u\\'0:00:00.005211\\', u\\'stderr\\': u\\'\\', u\\'rc\\': 1, u\\'invocation\\': {u\\'module_name\\': u\\'command\\', u\\'module_args\\': {u\\'creates\\': None, u\\'executable\\': None, u\\'_uses_shell\\': True, u\\'_raw_params\\': u"lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", u\\'removes\\': None, u\\'warn\\': True, u\\'chdir\\': None}}, u\\'stdout_lines\\': [], u\\'failed_when_result\\': False, u\\'start\\': u\\'2017-06-15 14:57:18.068881\\', u\\'warnings\\': [], u\\'failed\\': False}]) => {"changed": true, "cmd": "docker run --net=host --pid=host --privileged=true --name=\\\\"ceph-osd-prepare-overcloud-cephstorage-1-devdevvdc\\\\" -v /etc/ceph:/etc/ceph -v /var/lib/ceph/:/var/lib/ceph/ -v /dev:/dev -v /etc/localtime:/etc/localtime:ro -e \\\\"OSD_DEVICE=/dev/vdc\\\\" -e \\\\"OSD_JOURNAL_UUID=$(python -c \\\\"import uuid; print uuid.uuid5(uuid.NAMESPACE_DNS, \\'ea4bb35ac7b55a78c3c4fb8cdb4b7f65/dev/vdc\\')\\\\")\\\\" -e CEPH_DAEMON=OSD_CEPH_DISK_PREPARE -e CLUSTER=ceph -e OSD_JOURNAL_SIZE=256 -e OSD_FORCE_ZAP=1 \\\\"docker.io/ceph/daemon:tag-build-master-jewel-centos-7\\\\"", "delta": "0:00:10.421571", "end": "2017-06-15 14:57:39.605874", "failed": true, "item": ["/dev/vdc", {"_ansible_item_result": true, "_ansible_no_log": false, "_ansible_parsed": true, "changed": true, "cmd": "lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", "delta": "0:00:00.005211", "end": "2017-06-15 14:57:18.074092", "failed": false, "failed_when_result": false, "invocation": {"module_args": {"_raw_params": "lsblk -o PARTLABEL /dev/vdc | grep -sq \\'ceph\\'", "_uses_shell": true, "chdir": null, "creates": null, "executable": null, "removes": null, "warn": true}, "module_name": "command"}, "item": "/dev/vdc", "rc": 1, "start": "2017-06-15 14:57:18.068881", "stderr": "", "stdout": "", "stdout_lines": [], "warnings": []}], "rc": 1, "start": "2017-06-15 14:57:29.184303", "stderr": "", "stdout": "2017-06-15 14:57:29  /entrypoint.sh: static: does not generate config", "stdout_lines": ["2017-06-15 14:57:29  /entrypoint.sh: static: does not generate config"], "warnings": []}\
+\
+PLAY RECAP *********************************************************************\
+192.168.24.10              : ok=36   changed=7    unreachable=0    failed=0   \
+192.168.24.15              : ok=32   changed=4    unreachable=0    failed=1   \
+192.168.24.18              : ok=32   changed=4    unreachable=0    failed=1   \
+192.168.24.20              : ok=39   changed=8    unreachable=0    failed=0   \
+192.168.24.7               : ok=32   changed=4    unreachable=0    failed=1   \
+192.168.24.9               : ok=36   changed=7    unreachable=0    failed=0   \
+\
+'
+Stderr: u' [WARNING]: Consider using yum, dnf or zypper module rather than running rpm\
+'"
+
+Controllers fine: 
+
+[root@overcloud-controller-0 ~]# docker ps
+CONTAINER ID        IMAGE                                                   COMMAND             CREATED             STATUS              PORTS               NAMES
+0884b0ca7f60        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    42 minutes ago      Up 42 minutes                           ceph-mon-overcloud-controller-0
+[root@overcloud-controller-0 ~]# 
+
+[root@overcloud-controller-1 ~]# docker ps
+CONTAINER ID        IMAGE                                                   COMMAND             CREATED             STATUS              PORTS               NAMES
+d8f29e9bd911        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    42 minutes ago      Up 42 minutes                           ceph-mon-overcloud-controller-1
+[root@overcloud-controller-1 ~]# 
+
+[root@overcloud-controller-2 ~]# docker ps
+CONTAINER ID        IMAGE                                                   COMMAND             CREATED             STATUS              PORTS               NAMES
+03c4cf502b98        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    40 minutes ago      Up 40 minutes                           ceph-mon-overcloud-controller-2
+[root@overcloud-controller-2 ~]# 
+
+OSDs....
+
+[root@overcloud-cephstorage-0 ~]# docker ps -a
+CONTAINER ID        IMAGE                                                   COMMAND             CREATED             STATUS                      PORTS               NAMES
+6d623eb9e716        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    13 minutes ago      Exited (1) 13 minutes ago                       ceph-osd-prepare-overcloud-cephstorage-0-devdevvdc
+8c66b6e38c37        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    14 minutes ago      Exited (1) 13 minutes ago                       ceph-osd-prepare-overcloud-cephstorage-0-devdevvdb
+[root@overcloud-cephstorage-0 ~]# 
+
+[root@overcloud-cephstorage-1 ~]# docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES
+[root@overcloud-cephstorage-1 ~]# docker ps -a
+CONTAINER ID        IMAGE                                                   COMMAND             CREATED             STATUS                      PORTS               NAMES
+4b6236e4a813        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    15 minutes ago      Exited (1) 15 minutes ago                       ceph-osd-prepare-overcloud-cephstorage-1-devdevvdc
+f1674383bafe        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    15 minutes ago      Exited (1) 15 minutes ago                       ceph-osd-prepare-overcloud-cephstorage-1-devdevvdb
+[root@overcloud-cephstorage-1 ~]# 
+
+[root@overcloud-cephstorage-2 ~]# docker ps -a
+CONTAINER ID        IMAGE                                                   COMMAND             CREATED             STATUS                      PORTS               NAMES
+aa5ed8a5af8a        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    15 minutes ago      Exited (1) 15 minutes ago                       ceph-osd-prepare-overcloud-cephstorage-2-devdevvdc
+6a4d59eff467        docker.io/ceph/daemon:tag-build-master-jewel-centos-7   "/entrypoint.sh"    15 minutes ago      Exited (1) 15 minutes ago                       ceph-osd-prepare-overcloud-cephstorage-2-devdevvdb
+[root@overcloud-cephstorage-2 ~]# 
+
+[root@overcloud-cephstorage-2 ~]# ceph-disk list
+/dev/dm-0 other, xfs
+/dev/loop0 other, unknown
+/dev/loop1 other, unknown
+/dev/vda :
+ /dev/vda1 other, iso9660
+ /dev/vda2 other, xfs, mounted on /
+/dev/vdb other, unknown
+/dev/vdc other, unknown
+/dev/vdd other, unknown
+[root@overcloud-cephstorage-2 ~]# 
+
+[root@overcloud-cephstorage-2 ~]# CONTAINER_ID_OR_NAME=aa5ed8a5af8a
+[root@overcloud-cephstorage-2 ~]# docker export $CONTAINER_ID_OR_NAME | tar -C /tmp/$CONTAINER_ID_OR_NAME -xvf - 
+tar: /tmp/aa5ed8a5af8a: Cannot open: No such file or directory
+tar: Error is not recoverable: exiting now
+[root@overcloud-cephstorage-2 ~]# 
+
+[root@overcloud-cephstorage-2 ~]# docker logs aa5ed8a5af8a
+2017-06-15 14:57:29  /entrypoint.sh: static: does not generate config
+[root@overcloud-cephstorage-2 ~]# 
+
+
+[root@overcloud-cephstorage-2 ~]# docker inspect aa5ed8a5af8a 
+[
+    {
+        "Id": "aa5ed8a5af8a937394cbc91f70d50d601774fdb5e0e6536efe102ec69bfcb64a",
+        "Created": "2017-06-15T14:57:29.238984246Z",
+        "Path": "/entrypoint.sh",
+        "Args": [],
+        "State": {
+            "Status": "exited",
+            "Running": false,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 0,
+            "ExitCode": 1,
+            "Error": "",
+            "StartedAt": "2017-06-15T14:57:29.47767784Z",
+            "FinishedAt": "2017-06-15T14:57:39.549342176Z"
+        },
+        "Image": "sha256:d5250d45e52efcaca416030b276dfef679b5f76a41b6cce5b180dc9b0ded9b58",
+        "ResolvConfPath": "/var/lib/docker/containers/aa5ed8a5af8a937394cbc91f70d50d601774fdb5e0e6536efe102ec69bfcb64a/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/aa5ed8a5af8a937394cbc91f70d50d601774fdb5e0e6536efe102ec69bfcb64a/hostname",
+        "HostsPath": "/var/lib/docker/containers/aa5ed8a5af8a937394cbc91f70d50d601774fdb5e0e6536efe102ec69bfcb64a/hosts",
+        "LogPath": "",
+        "Name": "/ceph-osd-prepare-overcloud-cephstorage-2-devdevvdc",
+        "RestartCount": 0,
+        "Driver": "devicemapper",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": [
+                "/etc/ceph:/etc/ceph",
+                "/var/lib/ceph/:/var/lib/ceph/",
+                "/dev:/dev",
+                "/etc/localtime:/etc/localtime:ro"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "journald",
+                "Config": {}
+            },
+            "NetworkMode": "host",
+            "PortBindings": {},
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "CapAdd": null,
+            "CapDrop": null,
+            "Dns": [],
+            "DnsOptions": [],
+            "DnsSearch": [],
+            "ExtraHosts": null,
+            "GroupAdd": null,
+            "IpcMode": "",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "host",
+            "Privileged": true,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": [
+                "label=disable"
+            ],
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 67108864,
+            "Runtime": "docker-runc",
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": [],
+            "DiskQuota": 0,
+            "KernelMemory": 0,
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": -1,
+            "OomKillDisable": false,
+            "PidsLimit": 0,
+            "Ulimits": null,
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0
+        },
+        "GraphDriver": {
+            "Name": "devicemapper",
+            "Data": {
+                "DeviceId": "19",
+                "DeviceName": "docker-252:2-109053505-cd9ca885bd143bda88557e7dbdccfabc596dc3350dfa09578a6f839f09455b77",
+                "DeviceSize": "10737418240"
+            }
+        },
+        "Mounts": [
+            {
+                "Source": "/etc/ceph",
+                "Destination": "/etc/ceph",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Source": "/var/lib/ceph",
+                "Destination": "/var/lib/ceph",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Source": "/dev",
+                "Destination": "/dev",
+                "Mode": "",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Source": "/etc/localtime",
+                "Destination": "/etc/localtime",
+                "Mode": "ro",
+                "RW": false,
+                "Propagation": "rprivate"
+            },
+            {
+                "Name": "2f84659e6723f74fd2bb0ad6c3f7512daad24dd1f4f1e67498f727817650c735",
+                "Source": "/var/lib/docker/volumes/2f84659e6723f74fd2bb0ad6c3f7512daad24dd1f4f1e67498f727817650c735/_data",
+                "Destination": "/etc/ganesha",
+                "Driver": "local",
+                "Mode": "",
+                "RW": true,
+                "Propagation": ""
+            }
+        ],
+        "Config": {
+            "Hostname": "overcloud-cephstorage-2",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "OSD_DEVICE=/dev/vdc",
+                "OSD_JOURNAL_UUID=5a2f9d58-d07e-53ca-9c8d-c01be2226eab",
+                "CEPH_DAEMON=OSD_CEPH_DISK_PREPARE",
+                "CLUSTER=ceph",
+                "OSD_JOURNAL_SIZE=256",
+                "OSD_FORCE_ZAP=1",
+                "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "CEPH_VERSION=jewel",
+                "CONFD_VERSION=0.10.0"
+            ],
+            "Cmd": null,
+            "Image": "docker.io/ceph/daemon:tag-build-master-jewel-centos-7",
+            "Volumes": {
+                "/etc/ceph": {},
+                "/etc/ganesha": {},
+                "/var/lib/ceph": {}
+            },
+            "WorkingDir": "/",
+            "Entrypoint": [
+                "/entrypoint.sh"
+            ],
+            "OnBuild": null,
+            "Labels": {
+                "build-date": "20170510",
+                "license": "GPLv2",
+                "name": "CentOS Base Image",
+                "vendor": "CentOS"
+            }
+        },
+        "NetworkSettings": {
+            "Bridge": "",
+            "SandboxID": "736ffcfcf9cd80b455b4bf04d7b306c511f5d73fddc4090e3b9fdc77916533df",
+            "HairpinMode": false,
+            "LinkLocalIPv6Address": "",
+            "LinkLocalIPv6PrefixLen": 0,
+            "Ports": null,
+            "SandboxKey": "/var/run/docker/netns/default",
+            "SecondaryIPAddresses": null,
+            "SecondaryIPv6Addresses": null,
+            "EndpointID": "",
+            "Gateway": "",
+            "GlobalIPv6Address": "",
+            "GlobalIPv6PrefixLen": 0,
+            "IPAddress": "",
+            "IPPrefixLen": 0,
+            "IPv6Gateway": "",
+            "MacAddress": "",
+            "Networks": {
+                "host": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": null,
+                    "NetworkID": "0e308a63c63cf0de41d6ac4fd0bda53c0ff1b55b6d2382131a90887ea7af8e7f",
+                    "EndpointID": "",
+                    "Gateway": "",
+                    "IPAddress": "",
+                    "IPPrefixLen": 0,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "MacAddress": ""
+                }
+            }
+        }
+    }
+]
+[root@overcloud-cephstorage-2 ~]# 
