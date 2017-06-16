@@ -4,17 +4,14 @@ DNS=1
 
 IRONIC=1
 
-SET_MISTRAL_HOME=1
-MISTRAL=0
-MISTRAL_FORK=0
-
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_MASTER=1 # try latest ceph-ansible
+CEPH_ANSIBLE_MASTER=0 # try latest ceph-ansible
 
 THT=1
 
 WORKBOOK=1
 PRIKEY=1    # only works in WORKBOOK=1
+MISTRAL_ANSIBLE_TMP=1
 
 source ~/stackrc
 
@@ -31,61 +28,6 @@ if [ $IRONIC -eq 1 ]; then
     for i in $(seq 0 2); do 
 	ironic node-update ceph-$i replace properties/capabilities=profile:ceph-storage,boot_option:local
     done
-fi
-
-if [ $SET_MISTRAL_HOME -eq 1 ]; then
-    echo "Setting Mistral Home until the following merge: "
-    echo "- https://review.openstack.org/#/c/473587"
-    echo "- https://review.openstack.org/#/c/473586"
-    echo "This requires a Mistral restart"
-    grep mistral /etc/passwd
-    MISTRAL_HOME=/tmp/mistral-ansible
-    if [[ ! -d $MISTRAL_HOME ]]; then
-	sudo mkdir $MISTRAL_HOME
-    fi
-    sudo chown mistral:mistral $MISTRAL_HOME
-    for svc in $(echo openstack-mistral-{api,engine,executor}); do
-	sudo systemctl status $svc
-	sudo systemctl stop $svc
-    done
-    sudo usermod -d $MISTRAL_HOME -m mistral
-    for svc in $(echo openstack-mistral-{api,engine,executor}); do
-	sudo systemctl start $svc
-	sudo systemctl status $svc
-    done
-    grep mistral /etc/passwd
-fi
-
-if [ $MISTRAL -eq 1 ]; then
-    # as the actions have merged, this shouldn't be necessary 
-    mistral action-list | grep ansible 
-    # however, pulling from my fork to get the rundir 
-    # an alternative to rundir is to set the mistral user homedir to /tmp/mistral
-    
-    # this should be updated to pull from https://review.openstack.org/#/c/470021/
-    echo "Installing Mistral Ansbile actions from out of tree"
-    # https://github.com/d0ugal/mistral-ansible-actions
-    if [ $MISTRAL_FORK -eq 1 ]; then
-	# pull from git instead of pip
-	sudo rm -rf mistral-ansible-actions/
-	git clone https://github.com/fultonj/mistral-ansible-actions.git
-	# git clone https://github.com/d0ugal/mistral-ansible-actions.git	
-	sudo rm -Rf /usr/lib/python2.7/site-packages/mistral_ansible*
-	pushd mistral-ansible-actions
-	sudo python setup.py install
-	popd
-    else
-	sudo yum install -y python-pip
-	sudo pip install mistral-ansible-actions;
-    fi
-    sudo mistral-db-manage populate;
-    # apply fix for https://review.openstack.org/#/c/462917 (not necessary with new action)
-    #sudo sed -i s/workflow2/workflowv2/g /usr/lib/python2.7/site-packages/mistralclient/auth/keystone.py 
-    sudo systemctl restart openstack-mistral*;
-    mistral action-list | grep ansible
-    echo "Try these:"
-    echo "  mistral action-get ansible"
-    echo "  mistral action-get ansible-playbook"
 fi
 
 if [ $CEPH_ANSIBLE -eq 1 ]; then
@@ -141,6 +83,17 @@ if [ $WORKBOOK -eq 1 ]; then
     git review -d 469644
     popd
     if [ $PRIKEY -eq 1 ]; then
+
+	if [ $MISTRAL_ANSIBLE_TMP -eq 1 ]; then
+	    echo "Applying unmerged updates from: "
+	    echo "- https://review.openstack.org/#/c/473587/"
+	    echo "- https://review.openstack.org/#/c/473586/"
+	    echo "- https://review.openstack.org/#/c/474976/"
+	    echo ""
+	    diff -u /home/stack/tripleo-common/tripleo_common/actions/ansible.py /home/stack/tripleo-ceph-ansible/ansible.py 
+	    cp -v /home/stack/tripleo-ceph-ansible/ansible.py /home/stack/tripleo-common/tripleo_common/actions/ansible.py
+	fi
+
 	echo "Adding new mistral action get_private_key from updated tripleo_common"
 	sudo diff -u /usr/lib/python2.7/site-packages/tripleo_common/actions/validations.py /home/stack/tripleo-common/tripleo_common/actions/validations.py 
 	grep GetPrikeyAction /home/stack/tripleo-common/setup.cfg
