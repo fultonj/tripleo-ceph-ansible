@@ -6,7 +6,8 @@ source ~/stackrc
 if [[ -d /tmp/ceph-ansible-fetch/ ]]; then
     sudo rm -rf /tmp/ceph-ansible-fetch/
 fi
-mkdir /tmp/ceph-ansible-fetch/
+sudo mkdir /tmp/ceph-ansible-fetch/
+sudo chown mistral:mistral /tmp/ceph-ansible-fetch/
 
 WORKBOOK=/home/stack/tripleo-common/workbooks/ceph-ansible.yaml
 if [[ ! -e $WORKBOOK ]]; then
@@ -29,4 +30,4 @@ time openstack overcloud deploy --templates ~/templates \
 -e ~/tripleo-ceph-ansible/tht/overcloud-ceph-ansible.yaml
 
 # workaround
-rm -rf /tmp/ceph-ansible-fetch/
+sudo rm -rf /tmp/ceph-ansible-fetch/
