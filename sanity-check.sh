@@ -11,12 +11,10 @@ mon=$(nova list | grep controller | awk {'print $12'} | sed s/ctlplane=//g)
 
 source /home/stack/tripleo-ceph-ansible/overcloudrc
 if [ $OVERALL -eq 1 ]; then   
+    echo " --------- ceph -s --------- "
+    ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph -s"
     echo " --------- ceph df --------- "
     ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph df"
-    echo " --------- ceph health --------- "
-    ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph health"
-    echo " --------- ceph pg stat --------- "
-    ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph pg stat"
 fi
 
 if [ $CINDER -eq 1 ]; then
