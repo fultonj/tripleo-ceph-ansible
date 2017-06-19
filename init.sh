@@ -5,7 +5,7 @@ DNS=1
 IRONIC=1
 
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
+CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
 
 THT=1
 
@@ -37,7 +37,7 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     echo "Installing ceph-ansible in /usr/share"
     if [ $CEPH_ANSIBLE_GITHUB -eq 1 ]; then
 	echo "Cloning master from it"
-	git clone git@github.com:fultonj/ceph-ansible.git
+	git clone -b  add_openstack_metrics_pool git@github.com:fultonj/ceph-ansible.git 
 	sudo mv ceph-ansible /usr/share/
 	sudo chown -R root:root /usr/share/ceph-ansible
     else
