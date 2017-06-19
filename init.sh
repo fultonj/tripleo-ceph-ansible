@@ -47,16 +47,16 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     
     echo "Disabling Ansible host key checking"
     # https://github.com/openstack/tripleo-validations/blob/master/ansible.cfg#L3
-    sudo sed -i -e s/\#host_key_checking\ =\ False/host_key_checking=False/g /etc/ansible/ansible.cfg
+    sudo crudini --set /etc/ansible/ansible.cfg defaults host_key_checking False
 
     echo "Updating /etc/ansible/ansible.cfg action_plugins=/usr/share/ceph-ansible/plugins"
-    sudo sed -i -e s/\#action_plugins.*/action_plugins\ \=\ \\/usr\\/share\\/ceph-ansible\\/plugins\\/actions/g /etc/ansible/ansible.cfg
+    sudo crudini --set /etc/ansible/ansible.cfg defaults action_plugins /usr/share/ceph-ansible/plugins/actions
 
     echo "Disable retry files given permissions issue with /usr/share (for now)"
-    sudo sed -i s/\#retry_files_enabled\ =\ False/retry_files_enabled\ =\ False/g /etc/ansible/ansible.cfg
+    sudo crudini --set /etc/ansible/ansible.cfg defaults retry_files_enabled False
 
     echo "Disable deprecation warnings"
-    sudo sed -i s/\#deprecation_warnings\ =\ True/deprecation_warnings\ =\ False/g /etc/ansible/ansible.cfg
+    sudo crudini --set /etc/ansible/ansible.cfg defaults deprecation_warnings False
 fi
 
 if [ $THT -eq 1 ]; then
