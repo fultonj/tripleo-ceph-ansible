@@ -7,7 +7,7 @@ GLANCE=0
 source /home/stack/stackrc
 
 # all my inventories are dynamic; this is a workaround to keep it that way
-mon=$(nova list | grep controller | awk {'print $12'} | sed s/ctlplane=//g)
+mon=$(nova list | grep controller | awk {'print $12'} | sed s/ctlplane=//g | tail -1)
 
 source /home/stack/tripleo-ceph-ansible/overcloudrc
 if [ $OVERALL -eq 1 ]; then   
