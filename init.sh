@@ -1,19 +1,19 @@
 #!/usr/bin/env bash 
-set -x
+#set -x
 
-DNS=1
+DNS=0
 
-IRONIC=1
+IRONIC=0
 
 CEPH_ANSIBLE=1
 CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
 GIT_SSH=0
 
-THT=1
+THT=0
 
-WORKBOOK=1
-PRIKEY=1    # only works in WORKBOOK=1
-MISTRAL_ANSIBLE_TMP=1
+WORKBOOK=0
+PRIKEY=0    # only works in WORKBOOK=1
+MISTRAL_ANSIBLE_TMP=0
 
 source ~/stackrc
 
@@ -33,8 +33,8 @@ if [ $IRONIC -eq 1 ]; then
 fi
 
 if [ $CEPH_ANSIBLE -eq 1 ]; then
-    echo "Ensuring /{tmp,usr/share}/ceph-ansible does not exist"
-    sudo rm -rf /tmp/ceph-ansible/
+    echo "Ensuring /usr/share/ceph-ansible does not exist"
+    sudo rm -rf /usr/share/ceph-ansible/
     
     echo "Installing ceph-ansible in /usr/share"
     if [ $CEPH_ANSIBLE_GITHUB -eq 1 ]; then
