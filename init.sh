@@ -1,19 +1,19 @@
 #!/usr/bin/env bash 
-#set -x
+set -x
 
-DNS=0
+DNS=1
 
-IRONIC=0
+IRONIC=1
 
 CEPH_ANSIBLE=1
 CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
 GIT_SSH=0
 
-THT=0
+THT=1
 
-WORKBOOK=0
-PRIKEY=0    # only works in WORKBOOK=1
-MISTRAL_ANSIBLE_TMP=0
+WORKBOOK=1
+PRIKEY=1    # only works in WORKBOOK=1
+MISTRAL_ANSIBLE_TMP=1 
 
 source ~/stackrc
 
