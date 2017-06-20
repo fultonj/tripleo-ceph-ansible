@@ -33,11 +33,12 @@ fi
 if [ $CEPH_ANSIBLE -eq 1 ]; then
     echo "Ensuring /{tmp,usr/share}/ceph-ansible does not exist"
     sudo rm -rf /tmp/ceph-ansible/
+    sudo rm -rf /usr/share/ceph-ansible/
     
     echo "Installing ceph-ansible in /usr/share"
     if [ $CEPH_ANSIBLE_GITHUB -eq 1 ]; then
 	echo "Cloning master from it"
-	git clone -b  add_openstack_metrics_pool git@github.com:fultonj/ceph-ansible.git 
+        git clone -b add_openstack_metrics_pool https://github.com/fultonj/ceph-ansible.git
 	sudo mv ceph-ansible /usr/share/
 	sudo chown -R root:root /usr/share/ceph-ansible
     else
