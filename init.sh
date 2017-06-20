@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash -x
 
 DNS=1
 
@@ -6,6 +6,7 @@ IRONIC=1
 
 CEPH_ANSIBLE=1
 CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
+GIT_SSH=0
 
 THT=1
 
@@ -37,8 +38,13 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     echo "Installing ceph-ansible in /usr/share"
     if [ $CEPH_ANSIBLE_GITHUB -eq 1 ]; then
 	echo "Cloning ceph-ansible from github"
-	#git clone -b  add_openstack_metrics_pool git@github.com:fultonj/ceph-ansible.git 
-	git clone git@github.com:ceph/ceph-ansible.git 
+	if [ $GIT_SSH -eq 1 ]; then
+	    git clone git@github.com:ceph/ceph-ansible.git 
+	    #git clone -b  add_openstack_metrics_pool git@github.com:fultonj/ceph-ansible.git 
+	else
+	    #git clone -b add_openstack_metrics_pool https://github.com/fultonj/ceph-ansible.git
+	    git clone https://github.com/ceph/ceph-ansible.git
+	fi
 	sudo mv ceph-ansible /usr/share/
 	sudo chown -R root:root /usr/share/ceph-ansible
     else
