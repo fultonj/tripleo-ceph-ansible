@@ -1,4 +1,5 @@
-#!/usr/bin/env bash -x
+#!/usr/bin/env bash 
+set -x
 
 DNS=1
 
@@ -51,13 +52,14 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 	bash install-ceph-ansible.sh
     fi
     stat /usr/share/ceph-ansible/site.yml.sample
-    
-    echo "Updating /etc/ansible/ansible.cfg action_plugins=/usr/share/ceph-ansible/plugins"
-    sudo crudini --set /etc/ansible/ansible.cfg defaults action_plugins /usr/share/ceph-ansible/plugins/actions
 
-    echo "Disable retry files given permissions issue with /usr/share (for now)"
-    echo "Remove after fix for: https://github.com/ceph/ceph-ansible/issues/1611"
-    sudo crudini --set /etc/ansible/ansible.cfg defaults retry_files_enabled False
+    # recent testing indicates I don't need this
+    #echo "Updating /etc/ansible/ansible.cfg action_plugins=/usr/share/ceph-ansible/plugins"
+    #sudo crudini --set /etc/ansible/ansible.cfg defaults action_plugins /usr/share/ceph-ansible/plugins/actions
+
+    #echo "Disable retry files given permissions issue with /usr/share (for now)"
+    #echo "Remove after fix for: https://github.com/ceph/ceph-ansible/issues/1611"
+    #sudo crudini --set /etc/ansible/ansible.cfg defaults retry_files_enabled False
 fi
 
 if [ $THT -eq 1 ]; then
