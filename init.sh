@@ -1,7 +1,7 @@
 #!/usr/bin/env bash 
 set -x
 
-DN0=1
+DNS=1
 
 IRONIC=1
 
