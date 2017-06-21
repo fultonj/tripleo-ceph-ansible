@@ -1,17 +1,19 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash 
+set -x
 
 DNS=1
 
 IRONIC=1
 
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
+CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
+GIT_SSH=0
 
 THT=1
 
 WORKBOOK=1
 PRIKEY=1    # only works in WORKBOOK=1
-MISTRAL_ANSIBLE_TMP=1
+MISTRAL_ANSIBLE_TMP=1 
 
 source ~/stackrc
 
@@ -31,33 +33,32 @@ if [ $IRONIC -eq 1 ]; then
 fi
 
 if [ $CEPH_ANSIBLE -eq 1 ]; then
-    echo "Ensuring /{tmp,usr/share}/ceph-ansible does not exist"
-    sudo rm -rf /tmp/ceph-ansible/
+    echo "Ensuring /usr/share/ceph-ansible does not exist"
     sudo rm -rf /usr/share/ceph-ansible/
     
     echo "Installing ceph-ansible in /usr/share"
     if [ $CEPH_ANSIBLE_GITHUB -eq 1 ]; then
-	echo "Cloning master from it"
-        git clone -b add_openstack_metrics_pool https://github.com/fultonj/ceph-ansible.git
+	echo "Cloning ceph-ansible from github"
+	if [ $GIT_SSH -eq 1 ]; then
+	    #git clone git@github.com:ceph/ceph-ansible.git 
+	    git clone git@github.com:fultonj/ceph-ansible.git 
+	else
+	    #git clone -b add_openstack_metrics_pool https://github.com/fultonj/ceph-ansible.git
+	    git clone https://github.com/ceph/ceph-ansible.git
+	fi
 	sudo mv ceph-ansible /usr/share/
 	sudo chown -R root:root /usr/share/ceph-ansible
     else
 	bash install-ceph-ansible.sh
     fi
-    stat /usr/share/ceph-ansible/site.yml.sample
-    
-    echo "Disabling Ansible host key checking"
-    # https://github.com/openstack/tripleo-validations/blob/master/ansible.cfg#L3
-    sudo crudini --set /etc/ansible/ansible.cfg defaults host_key_checking False
+    stat /usr/share/ceph-ansible/site-docker.yml.sample
 
     echo "Updating /etc/ansible/ansible.cfg action_plugins=/usr/share/ceph-ansible/plugins"
     sudo crudini --set /etc/ansible/ansible.cfg defaults action_plugins /usr/share/ceph-ansible/plugins/actions
 
     echo "Disable retry files given permissions issue with /usr/share (for now)"
+    echo "Remove after fix for: https://github.com/ceph/ceph-ansible/issues/1611"
     sudo crudini --set /etc/ansible/ansible.cfg defaults retry_files_enabled False
-
-    echo "Disable deprecation warnings"
-    sudo crudini --set /etc/ansible/ansible.cfg defaults deprecation_warnings False
 fi
 
 if [ $THT -eq 1 ]; then
@@ -109,4 +110,3 @@ if [ $WORKBOOK -eq 1 ]; then
 	mistral action-list | grep tripleo.validations.get_
     fi
 fi
-
