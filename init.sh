@@ -6,7 +6,7 @@ DNS=1
 IRONIC=1
 
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
+CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
 GIT_SSH=0
 
 THT=1
@@ -40,8 +40,8 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     if [ $CEPH_ANSIBLE_GITHUB -eq 1 ]; then
 	echo "Cloning ceph-ansible from github"
 	if [ $GIT_SSH -eq 1 ]; then
-	    git clone git@github.com:ceph/ceph-ansible.git 
-	    #git clone -b  add_openstack_metrics_pool git@github.com:fultonj/ceph-ansible.git 
+	    #git clone git@github.com:ceph/ceph-ansible.git 
+	    git clone git@github.com:fultonj/ceph-ansible.git 
 	else
 	    #git clone -b add_openstack_metrics_pool https://github.com/fultonj/ceph-ansible.git
 	    git clone https://github.com/ceph/ceph-ansible.git
@@ -51,15 +51,14 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     else
 	bash install-ceph-ansible.sh
     fi
-    stat /usr/share/ceph-ansible/site.yml.sample
+    stat /usr/share/ceph-ansible/site-docker.yml.sample
 
-    # recent testing indicates I don't need this
-    #echo "Updating /etc/ansible/ansible.cfg action_plugins=/usr/share/ceph-ansible/plugins"
-    #sudo crudini --set /etc/ansible/ansible.cfg defaults action_plugins /usr/share/ceph-ansible/plugins/actions
+    echo "Updating /etc/ansible/ansible.cfg action_plugins=/usr/share/ceph-ansible/plugins"
+    sudo crudini --set /etc/ansible/ansible.cfg defaults action_plugins /usr/share/ceph-ansible/plugins/actions
 
-    #echo "Disable retry files given permissions issue with /usr/share (for now)"
-    #echo "Remove after fix for: https://github.com/ceph/ceph-ansible/issues/1611"
-    #sudo crudini --set /etc/ansible/ansible.cfg defaults retry_files_enabled False
+    echo "Disable retry files given permissions issue with /usr/share (for now)"
+    echo "Remove after fix for: https://github.com/ceph/ceph-ansible/issues/1611"
+    sudo crudini --set /etc/ansible/ansible.cfg defaults retry_files_enabled False
 fi
 
 if [ $THT -eq 1 ]; then
