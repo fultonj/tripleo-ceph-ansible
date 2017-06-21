@@ -110,4 +110,3 @@ if [ $WORKBOOK -eq 1 ]; then
 	mistral action-list | grep tripleo.validations.get_
     fi
 fi
-
