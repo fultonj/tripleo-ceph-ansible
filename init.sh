@@ -76,7 +76,7 @@ if [ $WORKBOOK -eq 1 ]; then
 	echo "$dir is missing; please git clone it from review.openstack.org"
 	exit 1
     fi
-    if [[ $(ssh-add -l | wc -l) -eq 0 ]]; then
+    if [[ ${GIT_SSH} -eq 1 && $(ssh-add -l | wc -l) -eq 0 ]]; then
 	# did they forward their SSH key?
 	echo "No SSH agent with keys present. Will not be able to connect to git."
 	exit 1
