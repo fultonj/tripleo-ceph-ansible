@@ -88,4 +88,6 @@ outputs:
               devices: 
                 - /dev/vdb
                 - /dev/vdc
+              docker_namespace: 'docker.io'
+              docker_namespace_is_registry: false
 
