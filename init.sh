@@ -1,19 +1,17 @@
 #!/usr/bin/env bash 
-set -x
 
 DNS=1
 
 IRONIC=1
 
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
-GIT_SSH=0
+CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
+GIT_SSH=1
 
 THT=1
 
 WORKBOOK=1
-PRIKEY=1    # only works in WORKBOOK=1
-MISTRAL_ANSIBLE_TMP=1 
+SKIP_TAGS=1
 
 source ~/stackrc
 
@@ -62,9 +60,10 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 fi
 
 if [ $THT -eq 1 ]; then
-    pushd /home/stack/tripleo-ceph-ansible/tht2mistral
-    bash install.sh
-    popd
+    git fetch https://git.openstack.org/openstack/tripleo-common refs/changes/44/469644/19 && git checkout FETCH_HEAD
+    # pushd /home/stack/tripleo-ceph-ansible/tht2mistral
+    # bash install.sh
+    # popd
 fi
 
 if [ $WORKBOOK -eq 1 ]; then
@@ -82,32 +81,27 @@ if [ $WORKBOOK -eq 1 ]; then
     echo "Patching ~/tripleo-common with newer unmerged changes from the following:"
     echo "- https://review.openstack.org/#/c/469644"
     pushd $dir
+
+    if [ $SKIP_TAGS -eq 1 ]; then
+	git review -d 475952
+	cp tripleo_common/actions/ansible.py ~/ansible.py-475952
+	git checkout master
+    fi
     git review -d 469644
     popd
-    if [ $PRIKEY -eq 1 ]; then
 
-	if [ $MISTRAL_ANSIBLE_TMP -eq 1 ]; then
-	    echo "Applying unmerged updates from: "
-	    echo "- https://review.openstack.org/#/c/473587/"
-	    echo "- https://review.openstack.org/#/c/473586/"
-	    echo "- https://review.openstack.org/#/c/474976/"
-	    echo ""
-	    diff -u /home/stack/tripleo-common/tripleo_common/actions/ansible.py /home/stack/tripleo-ceph-ansible/ansible.py 
-	    cp -v /home/stack/tripleo-ceph-ansible/ansible.py /home/stack/tripleo-common/tripleo_common/actions/ansible.py
-	fi
-
-	echo "Adding new mistral action get_private_key from updated tripleo_common"
-	sudo diff -u /usr/lib/python2.7/site-packages/tripleo_common/actions/validations.py /home/stack/tripleo-common/tripleo_common/actions/validations.py 
-	grep GetPrikeyAction /home/stack/tripleo-common/setup.cfg
+    if [ $SKIP_TAGS -eq 1 ]; then
+	echo "Update new mistral ansible-playbook action to support --skip-tags"
+	sudo diff -u /usr/lib/python2.7/site-packages/tripleo_common/actions/ansible.py  ~/ansible.py-475952
 	sudo rm -Rf /usr/lib/python2.7/site-packages/tripleo_common*
 	pushd $dir
+	cp ~/ansible.py-475952 tripleo_common/actions/ansible.py 
 	sudo python setup.py install
 	sudo cp /usr/share/tripleo-common/sudoers /etc/sudoers.d/tripleo-common
 	sudo systemctl restart openstack-mistral-executor
 	sudo systemctl restart openstack-mistral-engine
 	sudo mistral-db-manage populate
 	popd
-	mistral action-list | grep tripleo.validations.get_
     fi
 fi
 
