@@ -62,7 +62,7 @@ fi
 if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
     pushd $dir
-    git fetch https://git.openstack.org/openstack/tripleo-common refs/changes/44/469644/19 && git checkout FETCH_HEAD
+    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/7 && git checkout FETCH_HEAD
     popd
     # pushd /home/stack/tripleo-ceph-ansible/tht2mistral
     # bash install.sh
@@ -107,4 +107,3 @@ if [ $WORKBOOK -eq 1 ]; then
 	popd
     fi
 fi
-
