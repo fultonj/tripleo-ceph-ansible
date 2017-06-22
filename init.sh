@@ -5,7 +5,7 @@ DNS=1
 IRONIC=1
 
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
+CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
 GIT_SSH=1
 
 THT=1
