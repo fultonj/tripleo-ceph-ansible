@@ -9,10 +9,9 @@ for i in $(seq 0 $(expr $(wc -l /tmp/overcloud | awk {'print $1'}) - 1)); do
     name=$(echo ${LINE[$i]} | awk {'print $1'})
     ip=$(echo ${LINE[$i]} | awk {'print $2'})
     sub=$(echo "s/$name/$ip/g")
+    # I could concatenate these -e's into one sed command (but i'm lazy)
     sed -i -e $sub env_heat_should_create.json
 done
 cat env_heat_should_create.json | jq "."
 
 echo "The above is from the new env_heat_should_create.json"
-
-
