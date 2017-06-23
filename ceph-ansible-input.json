@@ -10,7 +10,5 @@
     "cluster_network": "192.168.24.0/24",
     "journal_collocation": true,
     "ceph_rgw_civetweb_port": 8080,
-    "devices": ["/dev/vdb", "/dev/vdc"],
-    "docker_namespace": "docker.io",
-    "docker_namespace_is_registry": false
+    "devices": ["/dev/vdb", "/dev/vdc"]
 }
