@@ -6,12 +6,12 @@ IRONIC=1
 
 CEPH_ANSIBLE=1
 CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
-GIT_SSH=0
+GIT_SSH=1
 
 THT=1
 
 WORKBOOK=1
-EXTRA_ENV=1
+EXTRA_ENV=1 # https://review.openstack.org/#/c/475728/
 
 source ~/stackrc
 
@@ -19,7 +19,7 @@ if [ $DNS -eq 1 ]; then
     openstack subnet list 
     SNET=$(openstack subnet list | awk '/192/ {print $2}')
     openstack subnet show $SNET
-    openstack subnet set $SNET --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248 
+    openstack subnet set $SNET --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248
     openstack subnet show $SNET
 fi
 
@@ -50,13 +50,6 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 	bash install-ceph-ansible.sh
     fi
     stat /usr/share/ceph-ansible/site-docker.yml.sample
-
-    #echo "Updating /etc/ansible/ansible.cfg action_plugins=/usr/share/ceph-ansible/plugins"
-    #sudo crudini --set /etc/ansible/ansible.cfg defaults action_plugins /usr/share/ceph-ansible/plugins/actions
-
-    #echo "Disable retry files given permissions issue with /usr/share (for now)"
-    #echo "Remove after fix for: https://github.com/ceph/ceph-ansible/issues/1611"
-    #sudo crudini --set /etc/ansible/ansible.cfg defaults retry_files_enabled False
 fi
 
 if [ $THT -eq 1 ]; then
