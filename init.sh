@@ -1,17 +1,18 @@
 #!/usr/bin/env bash 
 
-DNS=1
+DNS=0
 
-IRONIC=1
+IRONIC=0
 
 CEPH_ANSIBLE=1
 CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
 GIT_SSH=1
 
-THT=1
+THT=0
 
-WORKBOOK=1
-EXTRA_ENV=1 # https://review.openstack.org/#/c/475728/
+WORKBOOK=0
+EXTRA_ENV=0 # https://review.openstack.org/#/c/475728/
+FILES=0 # https://review.openstack.org/#/c/477541/ (requires EXTRA_ENV=1 ATM)
 
 source ~/stackrc
 
@@ -78,6 +79,12 @@ if [ $WORKBOOK -eq 1 ]; then
     echo "- https://review.openstack.org/#/c/469644"
     pushd $dir
 
+    if [ $FILES -eq 1 ]; then
+	git review -d 475728
+	cp tripleo_common/actions/files.py ~/files.py
+	git checkout master
+    fi
+    
     if [ $EXTRA_ENV -eq 1 ]; then
 	git review -d 475728
 	cp tripleo_common/actions/ansible.py ~/ansible.py-475728
@@ -91,7 +98,10 @@ if [ $WORKBOOK -eq 1 ]; then
 	sudo diff -u /usr/lib/python2.7/site-packages/tripleo_common/actions/ansible.py  ~/ansible.py-475728
 	sudo rm -Rf /usr/lib/python2.7/site-packages/tripleo_common*
 	pushd $dir
-	cp ~/ansible.py-475728 tripleo_common/actions/ansible.py 
+	cp ~/ansible.py-475728 tripleo_common/actions/ansible.py
+	if [ $FILES -eq 1 ]; then
+	    cp ~/files.py tripleo_common/actions/files.py
+	fi
 	sudo python setup.py install
 	sudo cp /usr/share/tripleo-common/sudoers /etc/sudoers.d/tripleo-common
 	sudo systemctl restart openstack-mistral-executor
