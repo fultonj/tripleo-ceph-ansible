@@ -4,11 +4,11 @@ DNS=0
 
 IRONIC=0
 
-CEPH_ANSIBLE=1
-CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
-GIT_SSH=1
+CEPH_ANSIBLE=0
+CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
+GIT_SSH=0
 
-THT=0
+THT=1
 
 WORKBOOK=0
 EXTRA_ENV=0 # https://review.openstack.org/#/c/475728/
@@ -56,7 +56,7 @@ fi
 if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
     pushd $dir
-    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/11 && git checkout FETCH_HEAD
+    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/13 && git checkout FETCH_HEAD
     popd
     # pushd /home/stack/tripleo-ceph-ansible/tht2mistral
     # bash install.sh
@@ -80,8 +80,9 @@ if [ $WORKBOOK -eq 1 ]; then
     pushd $dir
 
     if [ $FILES -eq 1 ]; then
-	git review -d 475728
-	cp tripleo_common/actions/files.py ~/files.py
+	git review -d 477541
+	cp tripleo_common/actions/files.py ~/files.py-477541
+	cp setup.cfg ~/setup.cfg-477541
 	git checkout master
     fi
     
@@ -100,7 +101,8 @@ if [ $WORKBOOK -eq 1 ]; then
 	pushd $dir
 	cp ~/ansible.py-475728 tripleo_common/actions/ansible.py
 	if [ $FILES -eq 1 ]; then
-	    cp ~/files.py tripleo_common/actions/files.py
+	    cp ~/files.py-477541 tripleo_common/actions/files.py
+	    cp ~/setup.cfg-477541 setup.cfg
 	fi
 	sudo python setup.py install
 	sudo cp /usr/share/tripleo-common/sudoers /etc/sudoers.d/tripleo-common
