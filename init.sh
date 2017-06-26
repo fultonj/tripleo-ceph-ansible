@@ -8,11 +8,10 @@ CEPH_ANSIBLE=0
 CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
 GIT_SSH=0
 
-THT=1
+THT=0
 
 WORKBOOK=0
-EXTRA_ENV=0 # https://review.openstack.org/#/c/475728/
-FILES=0 # https://review.openstack.org/#/c/477541/ (requires EXTRA_ENV=1 ATM)
+FILES=0 # https://review.openstack.org/#/c/477541
 
 source ~/stackrc
 
@@ -86,29 +85,31 @@ if [ $WORKBOOK -eq 1 ]; then
 	git checkout master
     fi
     
-    if [ $EXTRA_ENV -eq 1 ]; then
-	git review -d 475728
-	cp tripleo_common/actions/ansible.py ~/ansible.py-475728
-	git checkout master
-    fi
     git review -d 469644
-    popd
 
-    if [ $EXTRA_ENV -eq 1 ]; then
-	echo "Update new mistral ansible-playbook action to support --skip-tags"
-	sudo diff -u /usr/lib/python2.7/site-packages/tripleo_common/actions/ansible.py  ~/ansible.py-475728
-	sudo rm -Rf /usr/lib/python2.7/site-packages/tripleo_common*
-	pushd $dir
-	cp ~/ansible.py-475728 tripleo_common/actions/ansible.py
-	if [ $FILES -eq 1 ]; then
-	    cp ~/files.py-477541 tripleo_common/actions/files.py
-	    cp ~/setup.cfg-477541 setup.cfg
-	fi
+    if [ $FILES -eq 1 ]; then
+	echo "Patching ~/tripleo-common with newer unmerged changes from the following:"
+	echo "- https://review.openstack.org/#/c/477541"
+
+	cp ~/files.py-477541 tripleo_common/actions/files.py
+	cp ~/setup.cfg-477541 setup.cfg
+
 	sudo python setup.py install
 	sudo cp /usr/share/tripleo-common/sudoers /etc/sudoers.d/tripleo-common
 	sudo systemctl restart openstack-mistral-executor
 	sudo systemctl restart openstack-mistral-engine
 	sudo mistral-db-manage populate
-	popd
+
+	if [[ ! -e /usr/lib/python2.7/site-packages/tripleo_common/actions/files.pyc ]]; 
+	then
+	    echo "WARNING: files.py did not compile"
+	fi
+	action=tripleo.files
+	grep $action /home/stack/tripleo-common/setup.cfg
+	mistral action-list | grep $action
+	if [[ ! $? -eq 0 ]]; then
+	    echo "WARNING: $action action not found"
+	fi
     fi
+    popd
 fi
