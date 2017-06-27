@@ -8,10 +8,10 @@ CEPH_ANSIBLE=0
 CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
 GIT_SSH=0
 
-THT=1
+THT=0
 
-WORKBOOK=0
-FILES=0 # https://review.openstack.org/#/c/477541
+WORKBOOK=1
+FILES=1 # https://review.openstack.org/#/c/477541
 
 source ~/stackrc
 
@@ -93,11 +93,20 @@ if [ $WORKBOOK -eq 1 ]; then
 
 	cp ~/files.py-477541 tripleo_common/actions/files.py
 	cp ~/setup.cfg-477541 setup.cfg
-
+	
+	sudo rm -Rf /usr/lib/python2.7/site-packages/tripleo_common*
 	sudo python setup.py install
 	sudo cp /usr/share/tripleo-common/sudoers /etc/sudoers.d/tripleo-common
-	sudo systemctl restart openstack-mistral-executor
-	sudo systemctl restart openstack-mistral-engine
+
+	# status stop status start status
+	for s in stop start status; do
+	    for svc in $(systemctl list-unit-files | grep mistral | awk {'print $1'}); do
+		echo $svc;
+		sudo systemctl $s $svc;
+		sleep 2;
+	    done
+	done
+	sleep 2;
 	sudo mistral-db-manage populate
 
 	if [[ ! -e /usr/lib/python2.7/site-packages/tripleo_common/actions/files.pyc ]]; 
