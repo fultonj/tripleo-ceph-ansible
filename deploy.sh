@@ -2,13 +2,6 @@
 
 source ~/stackrc
 
-# workaround
-if [[ -d /tmp/ceph-ansible-fetch/ ]]; then
-    sudo rm -rf /tmp/ceph-ansible-fetch/
-fi
-sudo mkdir /tmp/ceph-ansible-fetch/
-sudo chown mistral:mistral /tmp/ceph-ansible-fetch/
-
 WORKBOOK=/home/stack/tripleo-common/workbooks/ceph-ansible.yaml
 if [[ ! -e $WORKBOOK ]]; then
     echo "$WORKBOOK does not exist (see init.sh)"
@@ -29,6 +22,5 @@ time openstack overcloud deploy --templates ~/templates \
 -e ~/templates/environments/disable-telemetry.yaml \
 -e ~/tripleo-ceph-ansible/tht/overcloud-ceph-ansible.yaml
 
+
 # -e ~/templates/environments/docker.yaml \
-# workaround
-sudo rm -rf /tmp/ceph-ansible-fetch/
