@@ -8,10 +8,10 @@ CEPH_ANSIBLE=0
 CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
 GIT_SSH=0
 
-THT=1
+THT=0
 
-WORKBOOK=0
-SKIP_TAGS=0
+WORKBOOK=1
+FILES=1 # https://review.openstack.org/#/c/477541
 
 source ~/stackrc
 
@@ -19,7 +19,7 @@ if [ $DNS -eq 1 ]; then
     openstack subnet list 
     SNET=$(openstack subnet list | awk '/192/ {print $2}')
     openstack subnet show $SNET
-    openstack subnet set $SNET --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248 
+    openstack subnet set $SNET --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248
     openstack subnet show $SNET
 fi
 
@@ -38,8 +38,8 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     if [ $CEPH_ANSIBLE_GITHUB -eq 1 ]; then
 	echo "Cloning ceph-ansible from github"
 	if [ $GIT_SSH -eq 1 ]; then
-	    #git clone git@github.com:ceph/ceph-ansible.git 
-	    git clone git@github.com:fultonj/ceph-ansible.git 
+	    git clone git@github.com:ceph/ceph-ansible.git 
+	    #git clone git@github.com:fultonj/ceph-ansible.git 
 	else
 	    #git clone -b add_openstack_metrics_pool https://github.com/fultonj/ceph-ansible.git
 	    git clone https://github.com/ceph/ceph-ansible.git
@@ -50,19 +50,12 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 	bash install-ceph-ansible.sh
     fi
     stat /usr/share/ceph-ansible/site-docker.yml.sample
-
-    echo "Updating /etc/ansible/ansible.cfg action_plugins=/usr/share/ceph-ansible/plugins"
-    sudo crudini --set /etc/ansible/ansible.cfg defaults action_plugins /usr/share/ceph-ansible/plugins/actions
-
-    echo "Disable retry files given permissions issue with /usr/share (for now)"
-    echo "Remove after fix for: https://github.com/ceph/ceph-ansible/issues/1611"
-    sudo crudini --set /etc/ansible/ansible.cfg defaults retry_files_enabled False
 fi
 
 if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
     pushd $dir
-    git fetch https://git.openstack.org/openstack/tripleo-common refs/changes/44/469644/19 && git checkout FETCH_HEAD
+    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/14 && git checkout FETCH_HEAD
     popd
     # pushd /home/stack/tripleo-ceph-ansible/tht2mistral
     # bash install.sh
@@ -76,7 +69,7 @@ if [ $WORKBOOK -eq 1 ]; then
 	echo "$dir is missing; please git clone it from review.openstack.org"
 	exit 1
     fi
-    if [[ $(ssh-add -l | wc -l) -eq 0 ]]; then
+    if [[ ${GIT_SSH} -eq 1 && $(ssh-add -l | wc -l) -eq 0 ]]; then
 	# did they forward their SSH key?
 	echo "No SSH agent with keys present. Will not be able to connect to git."
 	exit 1
@@ -85,26 +78,47 @@ if [ $WORKBOOK -eq 1 ]; then
     echo "- https://review.openstack.org/#/c/469644"
     pushd $dir
 
-    if [ $SKIP_TAGS -eq 1 ]; then
-	git review -d 475952
-	cp tripleo_common/actions/ansible.py ~/ansible.py-475952
+    if [ $FILES -eq 1 ]; then
+	git review -d 477541
+	cp tripleo_common/actions/files.py ~/files.py-477541
+	cp setup.cfg ~/setup.cfg-477541
 	git checkout master
     fi
+    
     git review -d 469644
-    popd
 
-    if [ $SKIP_TAGS -eq 1 ]; then
-	echo "Update new mistral ansible-playbook action to support --skip-tags"
-	sudo diff -u /usr/lib/python2.7/site-packages/tripleo_common/actions/ansible.py  ~/ansible.py-475952
+    if [ $FILES -eq 1 ]; then
+	echo "Patching ~/tripleo-common with newer unmerged changes from the following:"
+	echo "- https://review.openstack.org/#/c/477541"
+
+	cp ~/files.py-477541 tripleo_common/actions/files.py
+	cp ~/setup.cfg-477541 setup.cfg
+	
 	sudo rm -Rf /usr/lib/python2.7/site-packages/tripleo_common*
-	pushd $dir
-	cp ~/ansible.py-475952 tripleo_common/actions/ansible.py 
 	sudo python setup.py install
 	sudo cp /usr/share/tripleo-common/sudoers /etc/sudoers.d/tripleo-common
-	sudo systemctl restart openstack-mistral-executor
-	sudo systemctl restart openstack-mistral-engine
-	sudo mistral-db-manage populate
-	popd
-    fi
-fi
 
+	# status stop status start status
+	for s in stop start status; do
+	    for svc in $(systemctl list-unit-files | grep mistral | awk {'print $1'}); do
+		echo $svc;
+		sudo systemctl $s $svc;
+		sleep 2;
+	    done
+	done
+	sleep 2;
+	sudo mistral-db-manage populate
+
+	if [[ ! -e /usr/lib/python2.7/site-packages/tripleo_common/actions/files.pyc ]]; 
+	then
+	    echo "WARNING: files.py did not compile"
+	fi
+	action=tripleo.files
+	grep $action /home/stack/tripleo-common/setup.cfg
+	mistral action-list | grep $action
+	if [[ ! $? -eq 0 ]]; then
+	    echo "WARNING: $action action not found"
+	fi
+    fi
+    popd
+fi

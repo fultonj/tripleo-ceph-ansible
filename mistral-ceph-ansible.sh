@@ -27,6 +27,13 @@ if [[ $ENV -eq 1 ]]; then
 fi
 # -------------------------------------------------------
 if [[ $RUN -eq 1 ]]; then
+
+    if [[ -d /tmp/ceph-ansible-fetch/ ]]; then
+	sudo rm -rf /tmp/ceph-ansible-fetch/
+    fi
+    sudo mkdir /tmp/ceph-ansible-fetch/
+    sudo chown mistral:mistral /tmp/ceph-ansible-fetch/
+
     if [[ ! -f ceph-ansible-input.json ]]; then
 	echo "Error: ceph-ansible-input.json is not in `pwd`"
 	exit 1
@@ -56,4 +63,7 @@ if [[ $RUN -eq 1 ]]; then
     echo "UUID=$UUID"
     echo "TASK_ID=$TASK_ID"
     echo $TASK_ID > TASK_ID
+
+    # workaround
+    sudo rm -rf /tmp/ceph-ansible-fetch/
 fi

@@ -29,5 +29,6 @@ time openstack overcloud deploy --templates ~/templates \
 -e ~/templates/environments/disable-telemetry.yaml \
 -e ~/tripleo-ceph-ansible/tht/overcloud-ceph-ansible.yaml
 
+# -e ~/templates/environments/docker.yaml \
 # workaround
 sudo rm -rf /tmp/ceph-ansible-fetch/

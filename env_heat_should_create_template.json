@@ -1,0 +1,340 @@
+{
+    "name": "env_heat_should_create",
+    "variables": {
+	"service_ips": {
+	    "nova_vnc_proxy_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "timezone_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2",
+		"cephstorage-2",
+		"cephstorage-0",
+		"cephstorage-1",
+		"novacompute-0"
+	    ],
+	    "aodh_notifier_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "ca_certs_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2",
+		"cephstorage-2",
+		"cephstorage-0",
+		"cephstorage-1",
+		"novacompute-0"
+	    ],
+	    "cinder_volume_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "keystone_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "aodh_evaluator_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "swift_storage_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "redis_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "nova_scheduler_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "gnocchi_api_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "heat_api_cfn_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "gnocchi_metricd_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "neutron_dhcp_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "tripleo_packages_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2",
+		"cephstorage-2",
+		"cephstorage-0",
+		"cephstorage-1",
+		"novacompute-0"
+	    ],
+	    "nova_conductor_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "pacemaker_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "ceph_osd_ctlplane_node_ips": [
+		"cephstorage-0",
+		"cephstorage-1",
+		"cephstorage-2"
+	    ],
+	    "neutron_plugin_ml2_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2",
+		"novacompute-0"
+	    ],
+	    "nova_libvirt_ctlplane_node_ips": [
+		"novacompute-0"
+	    ],
+	    "cinder_api_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "swift_proxy_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "nova_api_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "heat_api_cloudwatch_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "ceilometer_expirer_disabled_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "mysql_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "glance_api_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "ceilometer_agent_notification_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "ntp_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2",
+		"cephstorage-2",
+		"cephstorage-0",
+		"cephstorage-1",
+		"novacompute-0"
+	    ],
+	    "nova_compute_ctlplane_node_ips": [
+		"novacompute-0"
+	    ],
+	    "rabbitmq_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "mysql_client_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2",
+		"novacompute-0",
+		"cephstorage-0",
+		"cephstorage-1",
+		"cephstorage-2"
+	    ],
+	    "keystone_public_api_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "gnocchi_statsd_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "nova_metadata_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "tripleo_firewall_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2",
+		"cephstorage-2",
+		"cephstorage-0",
+		"cephstorage-1",
+		"novacompute-0"
+	    ],
+	    "aodh_listener_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "neutron_l3_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "horizon_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "heat_engine_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "ceilometer_agent_central_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "sshd_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2",
+		"cephstorage-2",
+		"cephstorage-0",
+		"cephstorage-1",
+		"novacompute-0"
+	    ],
+	    "ceph_mon_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "kernel_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2",
+		"cephstorage-2",
+		"cephstorage-0",
+		"cephstorage-1",
+		"novacompute-0"
+	    ],
+	    "nova_consoleauth_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "mongodb_disabled_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "neutron_metadata_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "heat_api_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "memcached_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "snmp_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2",
+		"cephstorage-2",
+		"cephstorage-0",
+		"cephstorage-1",
+		"novacompute-0"
+	    ],
+	    "cinder_scheduler_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "neutron_api_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "haproxy_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "keystone_admin_api_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "ceilometer_agent_compute_ctlplane_node_ips": [
+		"novacompute-0"
+	    ],
+	    "swift_ringbuilder_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "nova_placement_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "neutron_ovs_agent_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2",
+		"novacompute-0"
+	    ],
+	    "panko_api_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ],
+	    "aodh_api_ctlplane_node_ips": [
+		"controller-0",
+		"controller-1",
+		"controller-2"
+	    ]
+	},
+	"heat_extresource_data": {}
+    }
+}

@@ -11,3 +11,5 @@ parameter_defaults:
   ComputeCount: 1
   CephStorageCount: 3
   NtpServer: 10.5.26.10
+  #DockerNamespace: docker.io
+  #DockerNamespaceIsRegistry: false
