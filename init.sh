@@ -8,7 +8,7 @@ CEPH_ANSIBLE=0
 CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
 GIT_SSH=0
 
-THT=0
+THT=1
 
 WORKBOOK=0
 FILES=0 # https://review.openstack.org/#/c/477541
@@ -55,7 +55,7 @@ fi
 if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
     pushd $dir
-    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/13 && git checkout FETCH_HEAD
+    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/14 && git checkout FETCH_HEAD
     popd
     # pushd /home/stack/tripleo-ceph-ansible/tht2mistral
     # bash install.sh
