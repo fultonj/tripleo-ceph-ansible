@@ -15,6 +15,10 @@ if [ $OVERALL -eq 1 ]; then
     ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph -s"
     echo " --------- ceph df --------- "
     ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph df"
+    echo " --------- ceph auth list --------- "
+    ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph auth list"
+    echo " --------- ls -l /etc/ceph/ --------- "
+    ansible all -i $mon, -u heat-admin  -b -m shell -a "ls -l /etc/ceph/"
 fi
 
 if [ $CINDER -eq 1 ]; then
