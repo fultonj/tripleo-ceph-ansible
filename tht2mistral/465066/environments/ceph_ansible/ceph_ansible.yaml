@@ -1,3 +1,0 @@
-resource_registry:
-  OS::TripleO::Services::CephMon: ../../extraconfig/ceph_ansible/ceph-mon.yaml
-  OS::TripleO::Services::CephOSD: ../../extraconfig/ceph_ansible/ceph-osd.yaml
