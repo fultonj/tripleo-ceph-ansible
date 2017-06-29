@@ -70,11 +70,10 @@ if [ $WORKBOOK -eq 1 ]; then
     if [[ ${GIT_SSH} -eq 1 && $(ssh-add -l | wc -l) -eq 0 ]]; then
 	# did they forward their SSH key?
 	echo "No SSH agent with keys present. Will not be able to connect to git."
-	exit 1
     fi
     echo "Patching ~/tripleo-common with newer unmerged changes from the following:"
     echo "- https://review.openstack.org/#/c/469644"
     pushd $dir
-    git review -d 469644
+    git fetch git://git.openstack.org/openstack/tripleo-common refs/changes/44/469644/15 && git checkout FETCH_HEAD
     popd
 fi
