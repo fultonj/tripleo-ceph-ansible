@@ -16,7 +16,7 @@ else
 fi
 
 time openstack overcloud deploy --templates ~/templates \
--e ~/templates/environments/ceph_ansible/ceph_ansible.yaml \
+-e ~/templates/environments/ceph-ansible/ceph-ansible.yaml \
 -e ~/templates/environments/puppet-pacemaker.yaml \
 -e ~/templates/environments/low-memory-usage.yaml \
 -e ~/templates/environments/disable-telemetry.yaml \
