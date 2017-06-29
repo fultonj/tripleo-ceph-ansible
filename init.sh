@@ -24,8 +24,9 @@ fi
 
 if [ $IRONIC -eq 1 ]; then
     echo "Updating ironic ceph nodes with ceph-storage profiles"
-    for i in $(seq 0 2); do 
-	ironic node-update ceph-$i replace properties/capabilities=profile:ceph-storage,boot_option:local
+    for i in `openstack baremetal node list | grep ceph | awk '{print $2}'`
+    do
+	ironic node-update $i replace properties/capabilities=profile:ceph-storage,boot_option:local
     done
 fi
 
