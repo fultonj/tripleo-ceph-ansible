@@ -1,17 +1,16 @@
 #!/usr/bin/env bash 
 
-DNS=0
+DNS=1
 
-IRONIC=0
+IRONIC=1
 
-CEPH_ANSIBLE=0
+CEPH_ANSIBLE=1
 CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
 GIT_SSH=0
 
-THT=0
+THT=1
 
 WORKBOOK=1
-FILES=1 # https://review.openstack.org/#/c/477541
 
 source ~/stackrc
 
@@ -41,7 +40,6 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 	    git clone git@github.com:ceph/ceph-ansible.git 
 	    #git clone git@github.com:fultonj/ceph-ansible.git 
 	else
-	    #git clone -b add_openstack_metrics_pool https://github.com/fultonj/ceph-ansible.git
 	    git clone https://github.com/ceph/ceph-ansible.git
 	fi
 	sudo mv ceph-ansible /usr/share/
@@ -55,7 +53,7 @@ fi
 if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
     pushd $dir
-    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/14 && git checkout FETCH_HEAD
+    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/19 && git checkout FETCH_HEAD
     popd
     # pushd /home/stack/tripleo-ceph-ansible/tht2mistral
     # bash install.sh
@@ -77,48 +75,6 @@ if [ $WORKBOOK -eq 1 ]; then
     echo "Patching ~/tripleo-common with newer unmerged changes from the following:"
     echo "- https://review.openstack.org/#/c/469644"
     pushd $dir
-
-    if [ $FILES -eq 1 ]; then
-	git review -d 477541
-	cp tripleo_common/actions/files.py ~/files.py-477541
-	cp setup.cfg ~/setup.cfg-477541
-	git checkout master
-    fi
-    
     git review -d 469644
-
-    if [ $FILES -eq 1 ]; then
-	echo "Patching ~/tripleo-common with newer unmerged changes from the following:"
-	echo "- https://review.openstack.org/#/c/477541"
-
-	cp ~/files.py-477541 tripleo_common/actions/files.py
-	cp ~/setup.cfg-477541 setup.cfg
-	
-	sudo rm -Rf /usr/lib/python2.7/site-packages/tripleo_common*
-	sudo python setup.py install
-	sudo cp /usr/share/tripleo-common/sudoers /etc/sudoers.d/tripleo-common
-
-	# status stop status start status
-	for s in stop start status; do
-	    for svc in $(systemctl list-unit-files | grep mistral | awk {'print $1'}); do
-		echo $svc;
-		sudo systemctl $s $svc;
-		sleep 2;
-	    done
-	done
-	sleep 2;
-	sudo mistral-db-manage populate
-
-	if [[ ! -e /usr/lib/python2.7/site-packages/tripleo_common/actions/files.pyc ]]; 
-	then
-	    echo "WARNING: files.py did not compile"
-	fi
-	action=tripleo.files
-	grep $action /home/stack/tripleo-common/setup.cfg
-	mistral action-list | grep $action
-	if [[ ! $? -eq 0 ]]; then
-	    echo "WARNING: $action action not found"
-	fi
-    fi
     popd
 fi
