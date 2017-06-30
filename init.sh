@@ -12,6 +12,8 @@ THT=1
 
 WORKBOOK=1
 
+OSP_CONTAINERS=0
+
 source ~/stackrc
 
 if [ $DNS -eq 1 ]; then
@@ -74,4 +76,9 @@ if [ $WORKBOOK -eq 1 ]; then
     pushd $dir
     git review -d 469644
     popd
+fi
+
+
+if [ $OSP_CONTAINERS -eq 1 ]; then
+    openstack overcloud container image upload --config-file ~/tripleo-common/container-images/overcloud_containers.yaml
 fi
