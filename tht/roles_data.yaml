@@ -12,6 +12,12 @@
   tags:
     - primary
     - controller
+  networks:
+    - External
+    - InternalApi
+    - Storage
+    - StorageMgmt
+    - Tenant
   HostnameFormatDefault: '%stackname%-controller-%index%'
   ServicesDefault:
     - OS::TripleO::Services::AodhApi
@@ -27,10 +33,10 @@
     # in Queens.
     - OS::TripleO::Services::CeilometerExpirer
     - OS::TripleO::Services::CephExternal
-    - OS::TripleO::Services::CephMds
+#    - OS::TripleO::Services::CephMds
     - OS::TripleO::Services::CephMon
-    - OS::TripleO::Services::CephRbdMirror
-    - OS::TripleO::Services::CephRgw
+#    - OS::TripleO::Services::CephRbdMirror
+#    - OS::TripleO::Services::CephRgw
     - OS::TripleO::Services::CertmongerUser
     - OS::TripleO::Services::CinderApi
     - OS::TripleO::Services::CinderBackendDellPs
@@ -41,6 +47,7 @@
     - OS::TripleO::Services::CinderHPELeftHandISCSI
     - OS::TripleO::Services::CinderScheduler
     - OS::TripleO::Services::CinderVolume
+    - OS::TripleO::Services::Clustercheck
     - OS::TripleO::Services::Collectd
     - OS::TripleO::Services::Congress
     - OS::TripleO::Services::Docker
@@ -60,6 +67,7 @@
     - OS::TripleO::Services::Horizon
     - OS::TripleO::Services::IronicApi
     - OS::TripleO::Services::IronicConductor
+    - OS::TripleO::Services::Iscsid
     - OS::TripleO::Services::Keepalived
     - OS::TripleO::Services::Kernel
     - OS::TripleO::Services::Keystone
@@ -80,7 +88,7 @@
     - OS::TripleO::Services::NeutronL2gwAgent
     - OS::TripleO::Services::NeutronL2gwApi
     - OS::TripleO::Services::NeutronL3Agent
-#    - OS::TripleO::Services::NeutronLinuxbridgeAgent
+    - OS::TripleO::Services::NeutronLinuxbridgeAgent
     - OS::TripleO::Services::NeutronMetadataAgent
     - OS::TripleO::Services::NeutronML2FujitsuCfab
     - OS::TripleO::Services::NeutronML2FujitsuFossw
@@ -128,10 +136,13 @@
   description: |
     Basic Compute Node role
   CountDefault: 1
+  networks:
+    - InternalApi
+    - Tenant
+    - Storage
   HostnameFormatDefault: '%stackname%-novacompute-%index%'
   disable_upgrade_deployment: True
   ServicesDefault:
-    - OS::TripleO::Services::CephOSD
     - OS::TripleO::Services::AuditD
     - OS::TripleO::Services::CACerts
     - OS::TripleO::Services::CephClient
@@ -145,9 +156,10 @@
     - OS::TripleO::Services::ComputeNeutronOvsAgent
     - OS::TripleO::Services::Docker
     - OS::TripleO::Services::FluentdClient
+    - OS::TripleO::Services::Iscsid
     - OS::TripleO::Services::Kernel
     - OS::TripleO::Services::MySQLClient
-#    - OS::TripleO::Services::NeutronLinuxbridgeAgent
+    - OS::TripleO::Services::NeutronLinuxbridgeAgent
     - OS::TripleO::Services::NeutronSriovAgent
     - OS::TripleO::Services::NeutronVppAgent
     - OS::TripleO::Services::NovaCompute
@@ -168,6 +180,10 @@
 - name: BlockStorage
   description: |
     Cinder Block Storage node role
+  networks:
+    - InternalApi
+    - Storage
+    - StorageMgmt
   ServicesDefault:
     - OS::TripleO::Services::AuditD
     - OS::TripleO::Services::BlockStorageCinderVolume
@@ -176,6 +192,7 @@
     - OS::TripleO::Services::Collectd
     - OS::TripleO::Services::Docker
     - OS::TripleO::Services::FluentdClient
+    - OS::TripleO::Services::Iscsid
     - OS::TripleO::Services::Kernel
     - OS::TripleO::Services::MySQLClient
     - OS::TripleO::Services::Ntp
@@ -192,6 +209,10 @@
 - name: ObjectStorage
   description: |
     Swift Object Storage node role
+  networks:
+    - InternalApi
+    - Storage
+    - StorageMgmt
   disable_upgrade_deployment: True
   ServicesDefault:
     - OS::TripleO::Services::AuditD
@@ -218,10 +239,75 @@
 - name: CephStorage
   description: |
     Ceph OSD Storage node role
+  networks:
+    - Storage
+    - StorageMgmt
   ServicesDefault:
     - OS::TripleO::Services::AuditD
     - OS::TripleO::Services::CACerts
     - OS::TripleO::Services::CephOSD
+    - OS::TripleO::Services::CertmongerUser
+    - OS::TripleO::Services::Collectd
+    - OS::TripleO::Services::Docker
+    - OS::TripleO::Services::FluentdClient
+    - OS::TripleO::Services::Kernel
+    - OS::TripleO::Services::MySQLClient
+    - OS::TripleO::Services::Ntp
+    - OS::TripleO::Services::Securetty
+    - OS::TripleO::Services::SensuClient
+    - OS::TripleO::Services::Snmp
+    - OS::TripleO::Services::Sshd
+    - OS::TripleO::Services::Timezone
+    - OS::TripleO::Services::TripleoFirewall
+    - OS::TripleO::Services::TripleoPackages
+###############################################################################
+# Role: CephMds (custom)
+###############################################################################
+- name: CephMds
+  description: |
+    Ceph MDS node role
+  networks:
+    - External
+    - InternalApi
+    - Storage
+    - StorageMgmt
+    - Tenant
+  ServicesDefault:
+    - OS::TripleO::Services::AuditD
+    - OS::TripleO::Services::CACerts
+    - OS::TripleO::Services::CephMds
+    - OS::TripleO::Services::CephClient
+    - OS::TripleO::Services::CertmongerUser
+    - OS::TripleO::Services::Collectd
+    - OS::TripleO::Services::Docker
+    - OS::TripleO::Services::FluentdClient
+    - OS::TripleO::Services::Kernel
+    - OS::TripleO::Services::MySQLClient
+    - OS::TripleO::Services::Ntp
+    - OS::TripleO::Services::Securetty
+    - OS::TripleO::Services::SensuClient
+    - OS::TripleO::Services::Snmp
+    - OS::TripleO::Services::Sshd
+    - OS::TripleO::Services::Timezone
+    - OS::TripleO::Services::TripleoFirewall
+    - OS::TripleO::Services::TripleoPackages
+###############################################################################
+# Role: CephRgw (custom)
+###############################################################################
+- name: CephRgw
+  description: |
+    Ceph RGW node role
+  networks:
+    - External
+    - InternalApi
+    - Storage
+    - StorageMgmt
+    - Tenant
+  ServicesDefault:
+    - OS::TripleO::Services::AuditD
+    - OS::TripleO::Services::CACerts
+    - OS::TripleO::Services::CephRgw
+    - OS::TripleO::Services::CephClient
     - OS::TripleO::Services::CertmongerUser
     - OS::TripleO::Services::Collectd
     - OS::TripleO::Services::Docker
