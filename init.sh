@@ -1,16 +1,16 @@
 #!/usr/bin/env bash 
 
-DNS=1
+DNS=0
 
 IRONIC=1
 
-CEPH_ANSIBLE=1
+CEPH_ANSIBLE=0
 CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
 GIT_SSH=0
 
-THT=1
+THT=0
 
-WORKBOOK=1
+WORKBOOK=0
 
 OSP_CONTAINERS=0
 
@@ -25,10 +25,14 @@ if [ $DNS -eq 1 ]; then
 fi
 
 if [ $IRONIC -eq 1 ]; then
-    echo "Updating ironic ceph nodes with ceph-storage profiles"
+    echo "Updating ironic ceph storage nodes with ceph-storage profiles"
     for i in $(seq 0 2); do 
 	ironic node-update ceph-$i replace properties/capabilities=profile:ceph-storage,boot_option:local
     done
+    echo "Updating ironic ceph mds node with ceph-mds profile"
+    ironic node-update mds-0 replace properties/capabilities=profile:ceph-mds,boot_option:local
+    echo "Updating ironic ceph rgw node with ceph-mds profile"
+    ironic node-update rgw-0 replace properties/capabilities=profile:ceph-rgw,boot_option:local
 fi
 
 if [ $CEPH_ANSIBLE -eq 1 ]; then
