@@ -23,5 +23,7 @@ time openstack overcloud deploy --templates ~/templates \
 -e ~/templates/environments/puppet-pacemaker.yaml \
 -e ~/templates/environments/low-memory-usage.yaml \
 -e ~/templates/environments/disable-telemetry.yaml \
--e ~/templates/environments/docker.yaml \
 -e ~/tripleo-ceph-ansible/tht/overcloud-ceph-ansible.yaml
+
+# still getting http://sprunge.us/dSUR
+# -e ~/templates/environments/docker.yaml \
