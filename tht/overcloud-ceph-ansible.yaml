@@ -23,7 +23,7 @@ parameter_defaults:
     raw_multi_journal:
       - /dev/vdd
       - /dev/vdd
-    journal_size: 5120
+    journal_size: 256 # vdd is 1024M
     journal_collocation: false
   CephPoolDefaultPgNum: 32
   
