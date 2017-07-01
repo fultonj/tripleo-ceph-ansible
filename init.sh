@@ -29,9 +29,17 @@ if [ $IRONIC -eq 1 ]; then
     for i in $(seq 0 2); do 
 	ironic node-update ceph-$i replace properties/capabilities=profile:ceph-storage,boot_option:local
     done
+    # mds
     echo "Updating ironic ceph mds node with ceph-mds profile"
+    openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 2 ceph-mds
+    openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="ceph-mds" ceph-mds
+    openstack flavor show ceph-mds
     ironic node-update mds-0 replace properties/capabilities=profile:ceph-mds,boot_option:local
-    echo "Updating ironic ceph rgw node with ceph-mds profile"
+    # rgw
+    echo "Updating ironic ceph rgw node with ceph-rgw profile"
+    openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 2 ceph-rgw
+    openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="ceph-rgw" ceph-rgw
+    openstack flavor show ceph-rgw
     ironic node-update rgw-0 replace properties/capabilities=profile:ceph-rgw,boot_option:local
 fi
 
