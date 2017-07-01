@@ -16,6 +16,7 @@ else
 fi
 
 time openstack overcloud deploy --templates ~/templates \
+-r ~/tripleo-ceph-ansible/tht/roles_data.yaml \
 -e ~/templates/environments/ceph-ansible/ceph-ansible.yaml \
 -e ~/templates/environments/puppet-pacemaker.yaml \
 -e ~/templates/environments/low-memory-usage.yaml \
