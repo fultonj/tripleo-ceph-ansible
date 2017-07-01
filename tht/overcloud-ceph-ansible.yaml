@@ -2,14 +2,30 @@ resource_registry:
   OS::TripleO::NodeUserData: first-boot-template.yaml
 
 parameter_defaults:
-  CephAnsibleDeployWorkflowName: tripleo.storage.v1.ceph-install
-  #CephClusterFSID: b007365e-cc87-11e5-a877-525400330ee0
-  OvercloudControlFlavor: control
-  OvercloudComputeFlavor: compute
-  OvercloudCephStorageFlavor: ceph-storage
-  ControllerCount: 3
-  ComputeCount: 1
-  CephStorageCount: 3
   NtpServer: 10.5.26.10
-  #DockerNamespace: docker.io
-  #DockerNamespaceIsRegistry: false
+  
+  OvercloudControlFlavor: control
+  ControllerCount: 3
+  OvercloudComputeFlavor: compute
+  ComputeCount: 1  
+  OvercloudCephStorageFlavor: ceph-storage
+  CephStorageCount: 3
+  CephMdsCount: 0
+  OvercloudCephMdsFlavor: ceph-mds
+  CephRgwCount: 0
+  OvercloudCephMdsFlavor: ceph-rgw
+
+  CephPoolDefaultSize: 1
+  CephAnsibleDisksConfig:
+    devices:
+      - /dev/vdb
+      - /dev/vdc
+    raw_multi_journal:
+      - /dev/vdd
+      - /dev/vdd
+    journal_size: 5120
+    journal_collocation: false
+  CephPoolDefaultPgNum: 32
+  
+  #DockerNamespace: 192.168.24.1:8787/tripleoupstream
+  #DockerNamespaceIsRegistry: true
