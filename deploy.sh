@@ -4,6 +4,10 @@ source ~/stackrc
 
 WORKBOOK_DEV=0 # workbook is merged; are you developing it more?
 if [[ $WORKBOOK_DEV -gt 0 ]]; then
+
+    # is skip_tags commented out?
+    grep skip ~/tripleo-common/workbooks/ceph-ansible.yaml
+
     WORKBOOK=/home/stack/tripleo-common/workbooks/ceph-ansible.yaml
     if [[ ! -e $WORKBOOK ]]; then
 	echo "$WORKBOOK does not exist (see init.sh)"
