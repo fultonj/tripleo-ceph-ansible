@@ -10,9 +10,9 @@ parameter_defaults:
   ComputeCount: 1  
   OvercloudCephStorageFlavor: ceph-storage
   CephStorageCount: 3
-  CephMdsCount: 0
+  CephMdsCount: 1
   OvercloudCephMdsFlavor: ceph-mds
-  CephRgwCount: 0
+  CephRgwCount: 1
   OvercloudCephMdsFlavor: ceph-rgw
 
   CephPoolDefaultSize: 1
@@ -20,11 +20,12 @@ parameter_defaults:
     devices:
       - /dev/vdb
       - /dev/vdc
-    raw_multi_journal:
+    raw_journal_devices:
       - /dev/vdd
       - /dev/vdd
     journal_size: 256 # vdd is 1024M
     journal_collocation: false
+    raw_multi_journal: true
   CephPoolDefaultPgNum: 32
   
   #DockerNamespace: 192.168.24.1:8787/tripleoupstream
