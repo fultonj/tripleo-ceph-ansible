@@ -1,5 +1,6 @@
 resource_registry:
   OS::TripleO::NodeUserData: first-boot-template.yaml
+  OS::TripleO::Services::CephMds: /home/stack/tripleo-heat-templates/extraconfig/services/ceph-ansible/ceph-mds.yaml
 
 parameter_defaults:
   NtpServer: 10.5.26.10
@@ -12,7 +13,7 @@ parameter_defaults:
   CephStorageCount: 3
   CephMdsCount: 1
   OvercloudCephMdsFlavor: ceph-mds
-  CephRgwCount: 1
+  CephRgwCount: 0
   OvercloudCephMdsFlavor: ceph-rgw
 
   CephPoolDefaultSize: 1
