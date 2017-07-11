@@ -44,8 +44,6 @@ if [ $IRONIC -eq 1 ]; then
 fi
 
 if [ $CEPH_ANSIBLE -eq 1 ]; then
-    echo "Ensuring /usr/share/ceph-ansible does not exist"
-    sudo rm -rf /usr/share/ceph-ansible/
     
     echo "Installing ceph-ansible in /usr/share"
     if [ $CEPH_ANSIBLE_GITHUB -eq 1 ]; then
@@ -61,7 +59,10 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     else
 	bash install-ceph-ansible.sh
     fi
-    stat /usr/share/ceph-ansible/site-docker.yml.sample
+    echo "Adding manual update to site-docker.yml.sample"
+    echo "See https://github.com/ceph/ceph-ansible/commit/108503da961e78d28c45ee4c8fd1ea71b70abf27"
+    curl https://raw.githubusercontent.com/ceph/ceph-ansible/108503da961e78d28c45ee4c8fd1ea71b70abf27/site-docker.yml.sample > /tmp/site-docker.yml.sample
+    sudo mv /tmp/site-docker.yml.sample /usr/share/ceph-ansible/site-docker.yml.sample
 fi
 
 if [ $THT -eq 1 ]; then

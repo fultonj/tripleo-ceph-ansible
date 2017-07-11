@@ -7,7 +7,7 @@
 URL=http://cbs.centos.org/repos
 SUF=x86_64/os
 
-for repo in storage7-ceph-jewel-candidate storage7-ceph-common-candidate; do
+for repo in storage7-ceph-jewel-release storage7-ceph-common-release; do
     echo "Creating $repo.repo"
     sh -c "cat /dev/null > $repo.repo"
     sh -c "echo \"[$repo]\" >> $repo.repo"
