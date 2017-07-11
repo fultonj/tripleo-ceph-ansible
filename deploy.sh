@@ -2,7 +2,7 @@
 
 source ~/stackrc
 
-WORKBOOK_DEV=0 # workbook is merged; are you developing it more?
+WORKBOOK_DEV=1 # workbook updated 
 if [[ $WORKBOOK_DEV -gt 0 ]]; then
 
     # is skip_tags commented out?

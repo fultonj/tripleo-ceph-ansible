@@ -10,7 +10,7 @@ GIT_SSH=0
 
 THT=1
 
-WORKBOOK=0 # obsolete as per 469644 merge
+WORKBOOK=1  
 
 OSP_CONTAINERS=1
 
@@ -86,9 +86,9 @@ if [ $WORKBOOK -eq 1 ]; then
 	exit 1
     fi
     echo "Patching ~/tripleo-common with newer unmerged changes from the following:"
-    echo "- https://review.openstack.org/#/c/469644"
+    echo "- https://review.openstack.org/#/c/480771"
     pushd $dir
-    git review -d 469644
+    git review -d 480771
     popd
 fi
 
