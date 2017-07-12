@@ -8,22 +8,23 @@ source /home/stack/stackrc
 
 # all my inventories are dynamic; this is a workaround to keep it that way
 mon=$(nova list | grep controller | awk {'print $12'} | sed s/ctlplane=//g | tail -1)
+run_on_mon="ansible all -i $mon, -u heat-admin -b -m shell -a "
 
 source /home/stack/tripleo-ceph-ansible/overcloudrc
 if [ $OVERALL -eq 1 ]; then
     echo " --------- docker ps --------- "
-    ansible all -i $mon, -u heat-admin  -b -m shell -a "docker ps"
+    $run_on_mon "docker ps"
     echo " --------- ceph -s --------- "
-    ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph -s"
+    $run_on_mon "ceph -s"
     echo " --------- ceph df --------- "
-    ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph df"
+    $run_on_mon "ceph df"
     echo " --------- ceph auth list --------- "
-    ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph auth list"
+    $run_on_mon "ceph auth list"
 fi
 
 if [ $CINDER -eq 1 ]; then
     echo " --------- Ceph cinder volumes pool --------- "
-    ansible all -i $mon, -u heat-admin  -b -m shell -a "rbd -p volumes ls -l"
+    $run_on_mon "rbd -p volumes ls -l"
     openstack volume list
 
     echo "Creating 20G Cinder volume"
@@ -32,7 +33,7 @@ if [ $CINDER -eq 1 ]; then
 
     echo "Listing Cinder Ceph Pool and Volume List"
     openstack volume list
-    ansible all -i $mon, -u heat-admin  -b -m shell -a "rbd -p volumes ls -l"
+    $run_on_mon "rbd -p volumes ls -l"
 fi
 
 if [ $GLANCE -eq 1 ]; then
@@ -50,7 +51,7 @@ if [ $GLANCE -eq 1 ]; then
 
     echo " --------- Ceph images pool --------- "
     echo "Listing Glance Ceph Pool and Image List"
-    ansible all -i $mon, -u heat-admin  -b -m shell -a "rbd -p images ls -l"
+    $run_on_mon "rbd -p images ls -l"
     openstack image list
 
     echo "Importing $raw image into Glance"
@@ -61,6 +62,6 @@ if [ $GLANCE -eq 1 ]; then
     fi
 
     echo "Listing Glance Ceph Pool and Image List"
-    ansible all -i $mon, -u heat-admin  -b -m shell -a "rbd -p images ls -l"
+    $run_on_mon "rbd -p images ls -l"
     openstack image list
 fi
