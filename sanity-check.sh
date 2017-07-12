@@ -10,15 +10,15 @@ source /home/stack/stackrc
 mon=$(nova list | grep controller | awk {'print $12'} | sed s/ctlplane=//g | tail -1)
 
 source /home/stack/tripleo-ceph-ansible/overcloudrc
-if [ $OVERALL -eq 1 ]; then   
+if [ $OVERALL -eq 1 ]; then
+    echo " --------- docker ps --------- "
+    ansible all -i $mon, -u heat-admin  -b -m shell -a "docker ps"
     echo " --------- ceph -s --------- "
     ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph -s"
     echo " --------- ceph df --------- "
     ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph df"
     echo " --------- ceph auth list --------- "
     ansible all -i $mon, -u heat-admin  -b -m shell -a "ceph auth list"
-    echo " --------- ls -l /etc/ceph/ --------- "
-    ansible all -i $mon, -u heat-admin  -b -m shell -a "ls -l /etc/ceph/"
 fi
 
 if [ $CINDER -eq 1 ]; then
