@@ -23,12 +23,10 @@ fi
 
 time openstack overcloud deploy --templates ~/templates \
 -r ~/tripleo-ceph-ansible/tht/roles_data.yaml \
+-e ~/templates/environments/docker.yaml \
+-e ~/templates/environments/docker-ha.yaml \
 -e ~/templates/environments/ceph-ansible/ceph-ansible.yaml \
 -e ~/templates/environments/ceph-ansible/ceph-mds.yaml \
--e ~/templates/environments/puppet-pacemaker.yaml \
 -e ~/templates/environments/low-memory-usage.yaml \
 -e ~/templates/environments/disable-telemetry.yaml \
 -e ~/tripleo-ceph-ansible/tht/overcloud-ceph-ansible.yaml
-
-# still getting http://sprunge.us/dSUR
-# -e ~/templates/environments/docker.yaml \
