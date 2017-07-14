@@ -59,6 +59,17 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     else
 	bash install-ceph-ansible.sh
     fi
+    echo "Applying https://github.com/ceph/ceph-ansible/pull/1682/commits"
+    from="https://raw.githubusercontent.com/gfidente/ceph-ansible/7346f40d26348fec12e09e7cec52399dea3d80cc"
+    to="/usr/share/ceph-ansible"
+
+    for f in roles/ceph-mon/tasks/openstack_config.yml roles/ceph-mon/defaults/main.yml group_vars/mons.yml.sample; do
+	curl $from/$f > foo 
+	diff -u foo $to/$f
+	sudo mv -v foo $to/$f
+    done
+
+
     # Clients won't work until ceph-ansible is fixed:
     #   https://review.openstack.org/#/c/482500 
     #   https://bugzilla.redhat.com/show_bug.cgi?id=1469426 
@@ -101,6 +112,8 @@ fi
 
 if [ $OSP_CONTAINERS -eq 1 ]; then
     echo "Setting up TripleO to use the pre-built images from registry on the dockerhub"
+    echo "This usually takes 18 minutes"
+    date
     # openstack overcloud container image upload --config-file /usr/share/openstack-tripleo-common/container-images/overcloud_containers.yaml
-    openstack overcloud container image upload --config-file ~/tripleo-common/container-images/overcloud_containers.yaml
+    time openstack overcloud container image upload --config-file ~/tripleo-common/container-images/overcloud_containers.yaml
 fi
