@@ -10,7 +10,7 @@ GIT_SSH=0
 
 THT=1
 
-WORKBOOK=1  
+WORKBOOK=1
 
 OSP_CONTAINERS=1
 
@@ -59,10 +59,15 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     else
 	bash install-ceph-ansible.sh
     fi
-    echo "Adding manual update to site-docker.yml.sample"
-    echo "See https://github.com/ceph/ceph-ansible/commit/108503da961e78d28c45ee4c8fd1ea71b70abf27"
-    curl https://raw.githubusercontent.com/ceph/ceph-ansible/108503da961e78d28c45ee4c8fd1ea71b70abf27/site-docker.yml.sample > /tmp/site-docker.yml.sample
-    sudo mv /tmp/site-docker.yml.sample /usr/share/ceph-ansible/site-docker.yml.sample
+    # Clients won't work until ceph-ansible is fixed:
+    #   https://review.openstack.org/#/c/482500 
+    #   https://bugzilla.redhat.com/show_bug.cgi?id=1469426 
+    #   https://bugzilla.redhat.com/show_bug.cgi?id=1471152
+    # 
+    # echo "Adding manual update to site-docker.yml.sample"
+    # echo "See https://github.com/ceph/ceph-ansible/commit/108503da961e78d28c45ee4c8fd1ea71b70abf27"
+    # curl https://raw.githubusercontent.com/ceph/ceph-ansible/108503da961e78d28c45ee4c8fd1ea71b70abf27/site-docker.yml.sample > /tmp/site-docker.yml.sample
+    # sudo mv /tmp/site-docker.yml.sample /usr/share/ceph-ansible/site-docker.yml.sample
 fi
 
 if [ $THT -eq 1 ]; then
@@ -95,6 +100,7 @@ fi
 
 
 if [ $OSP_CONTAINERS -eq 1 ]; then
-    openstack overcloud container image upload --config-file /usr/share/openstack-tripleo-common/container-images/overcloud_containers.yaml
-    # openstack overcloud container image upload --config-file ~/tripleo-common/container-images/overcloud_containers.yaml
+    echo "Setting up TripleO to use the pre-built images from registry on the dockerhub"
+    # openstack overcloud container image upload --config-file /usr/share/openstack-tripleo-common/container-images/overcloud_containers.yaml
+    openstack overcloud container image upload --config-file ~/tripleo-common/container-images/overcloud_containers.yaml
 fi
