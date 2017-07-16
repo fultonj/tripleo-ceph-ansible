@@ -1,0 +1,29 @@
+resource_registry:
+  OS::TripleO::NodeUserData: ../tht/first-boot-template.yaml
+
+parameter_defaults:
+  NtpServer: 10.5.26.10
+  
+  OvercloudControlFlavor: control
+  ControllerCount: 1
+  OvercloudComputeFlavor: compute
+  ComputeCount: 1  
+  OvercloudCephStorageFlavor: ceph-storage
+  CephStorageCount: 3
+  
+  ExtraConfig:
+    ceph::profile::params::fsid: eb2bb192-b1c9-11e6-9205-525400330666    
+    ceph::profile::params::osd_pool_default_pg_num: 64
+    ceph::profile::params::osd_pool_default_pgp_num: 64
+    ceph::profile::params::osd_pool_default_size: 1
+    ceph::profile::params::osd_pool_default_min_size: 1
+    ceph::profile::params::osd_recovery_max_active: 1
+    ceph::profile::params::osd_max_backfills: 1
+    ceph::profile::params::osd_recovery_op_priority: 2
+  CephStorageExtraConfig:
+    ceph::profile::params::osd_journal_size: 512
+    ceph::profile::params::osds:
+      '/dev/vdb':
+        journal: '/dev/vdd'
+      '/dev/vdc':
+        journal: '/dev/vdd'

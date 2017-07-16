@@ -22,7 +22,7 @@ Environment
 The following is for Phase 1
 
 - Deploy Ocata undercloud with quickstart with `--release ocata`
-- Prepare undercloud with [init.sh](../init.sh) without THT, WORKBOOK, or OSP_CONTAINERS
+- Prepare undercloud with [init.sh](../init.sh) with THT=WORKBOOK=OSP_CONTAINERS=0
 - Deploy Ocata overcloud with Ceph using [deploy-ocata.sh](deploy-ocata.sh)
 - Build the inventory with [ansible-inventory.sh](ansible-inventory.sh)
 - Import the ceph cluster into ceph-ansible with a [playbook](https://github.com/ceph/ceph-ansible/blob/master/infrastructure-playbooks/take-over-existing-cluster.yml)
