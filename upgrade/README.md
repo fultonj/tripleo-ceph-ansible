@@ -1,5 +1,5 @@
-Migrate Ceph to Containers with TripleO during Ocata to Pike Upgrade
-====================================================================
+Containerize Ceph with TripleO during Pike upgrade
+==================================================
 
 Scenario
 --------
@@ -24,6 +24,6 @@ The following is for Phase 1
 - Deploy Ocata undercloud with quickstart with `--release ocata`
 - Prepare undercloud with [init.sh](../init.sh) without THT, WORKBOOK, or OSP_CONTAINERS
 - Deploy Ocata overcloud with Ceph using [deploy-ocata.sh](deploy-ocata.sh)
-- Build the inventory with
+- Build the inventory with [ansible-inventory.sh](ansible-inventory.sh)
 - Import the ceph cluster into ceph-ansible with a [playbook](https://github.com/ceph/ceph-ansible/blob/master/infrastructure-playbooks/take-over-existing-cluster.yml)
 - Containerize the ceph cluster with a [playbook](https://github.com/ceph/ceph-ansible/blob/master/infrastructure-playbooks/switch-from-non-containerized-to-containerized-ceph-daemons.yml)
