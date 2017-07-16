@@ -1,0 +1,153 @@
+
+2017-07-15 22:38:56Z [overcloud.AllNodesDeploySteps]: CREATE_COMPLETE  state changed
+2017-07-15 22:38:56Z [overcloud]: CREATE_COMPLETE  Stack CREATE completed successfully
+
+ Stack overcloud CREATE_COMPLETE 
+
+/home/stack/.ssh/known_hosts updated.
+Original contents retained as /home/stack/.ssh/known_hosts.old
+Overcloud Endpoint: http://192.168.24.13:5000/v2.0
+Overcloud Deployed
+
+real	33m29.266s
+user	0m4.723s
+sys	0m0.432s
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$
+
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ nova list
++--------------------------------------+-------------------------+--------+------------+-------------+------------------------+
+| ID                                   | Name                    | Status | Task State | Power State | Networks               |
++--------------------------------------+-------------------------+--------+------------+-------------+------------------------+
+| 391cf400-b7a2-4b36-8f73-649a7bb219b9 | overcloud-cephstorage-0 | ACTIVE | -          | Running     | ctlplane=192.168.24.9  |
+| 50258c83-c01b-4eb3-8276-d4ef78364704 | overcloud-cephstorage-1 | ACTIVE | -          | Running     | ctlplane=192.168.24.17 |
+| 7ee4cbc7-02df-41f1-ad81-527d3aea50a7 | overcloud-cephstorage-2 | ACTIVE | -          | Running     | ctlplane=192.168.24.16 |
+| 6498c607-8d56-478b-9fe8-c3a3b372e0f6 | overcloud-controller-0  | ACTIVE | -          | Running     | ctlplane=192.168.24.8  |
+| 60884350-ab79-489d-9e52-0a6cb362f925 | overcloud-novacompute-0 | ACTIVE | -          | Running     | ctlplane=192.168.24.14 |
++--------------------------------------+-------------------------+--------+------------+-------------+------------------------+
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ 
+
+
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ ./sanity-check.sh 
+ --------- docker ps --------- 
+The authenticity of host '192.168.24.8 (192.168.24.8)' can't be established.
+ECDSA key fingerprint is fa:ed:bb:f7:a8:67:d2:51:57:96:0d:e6:9d:62:22:f7.
+Are you sure you want to continue connecting (yes/no)? yes
+192.168.24.8 | SUCCESS | rc=0 >>
+CONTAINER ID        IMAGE                                                            COMMAND                  CREATED             STATUS              PORTS               NAMES
+9a4b61cc314c        tripleoupstream/centos-binary-rabbitmq:latest                    "kolla_start"            About an hour ago   Up About an hour                        rabbitmq
+c52d8949c2c7        tripleoupstream/centos-binary-memcached:latest                   "/bin/bash -c 'source"   About an hour ago   Up About an hour                        memcached
+9ef6bf5c0870        tripleoupstream/centos-binary-redis:latest                       "kolla_start"            About an hour ago   Up About an hour                        redis
+5baa95237c5e        tripleoupstream/centos-binary-glance-api:latest                  "kolla_start"            About an hour ago   Up About an hour                        glance_api
+385a8776df8d        tripleoupstream/centos-binary-nova-api:latest                    "kolla_start"            About an hour ago   Up About an hour                        nova_api
+3474e9a16da3        tripleoupstream/centos-binary-nova-novncproxy:latest             "kolla_start"            About an hour ago   Up About an hour                        nova_vnc_proxy
+0c649e42232c        tripleoupstream/centos-binary-heat-api-cfn:latest                "kolla_start"            About an hour ago   Up About an hour                        heat_api_cfn
+4a482949511a        tripleoupstream/centos-binary-neutron-server:latest              "kolla_start"            About an hour ago   Up About an hour                        neutron_api
+d10c97103220        tripleoupstream/centos-binary-swift-account:latest               "kolla_start"            About an hour ago   Up About an hour                        swift_account_reaper
+7eb2cd449a18        tripleoupstream/centos-binary-nova-consoleauth:latest            "kolla_start"            About an hour ago   Up About an hour                        nova_consoleauth
+33064094ef5c        tripleoupstream/centos-binary-swift-container:latest             "kolla_start"            About an hour ago   Up About an hour                        swift_container_auditor
+9627b9aa7dfe        tripleoupstream/centos-binary-nova-api:latest                    "/usr/sbin/crond -n"     About an hour ago   Up About an hour                        nova_api_cron
+6894d442aea0        tripleoupstream/centos-binary-swift-proxy-server:latest          "kolla_start"            About an hour ago   Up About an hour                        swift_object_expirer
+a47ab1f3d84b        tripleoupstream/centos-binary-swift-object:latest                "kolla_start"            About an hour ago   Up About an hour                        swift_object_updater
+83b2a9d02cb3        tripleoupstream/centos-binary-swift-container:latest             "kolla_start"            About an hour ago   Up About an hour                        swift_container_replicator
+b603a93d2b6f        tripleoupstream/centos-binary-swift-account:latest               "kolla_start"            About an hour ago   Up About an hour                        swift_account_replicator
+fd9d3a2fbe52        tripleoupstream/centos-binary-neutron-openvswitch-agent:latest   "kolla_start"            About an hour ago   Up About an hour                        neutron_ovs_agent
+6d72e83910da        tripleoupstream/centos-binary-neutron-metadata-agent:latest      "kolla_start"            About an hour ago   Up About an hour                        neutron_metadata_agent
+bbae5a6e8e23        tripleoupstream/centos-binary-swift-object:latest                "kolla_start"            About an hour ago   Up About an hour                        swift_object_auditor
+3695cd7148d1        tripleoupstream/centos-binary-heat-api:latest                    "kolla_start"            About an hour ago   Up About an hour                        heat_api
+0f5386cde37c        tripleoupstream/centos-binary-nova-conductor:latest              "kolla_start"            About an hour ago   Up About an hour                        nova_conductor
+627a0e77fed4        tripleoupstream/centos-binary-neutron-dhcp-agent:latest          "kolla_start"            About an hour ago   Up About an hour                        neutron_dhcp
+ac5349d72f63        tripleoupstream/centos-binary-swift-account:latest               "kolla_start"            About an hour ago   Up About an hour                        swift_account_auditor
+43715e41da59        tripleoupstream/centos-binary-swift-proxy-server:latest          "kolla_start"            About an hour ago   Up About an hour                        swift_proxy
+d065d1e9b731        tripleoupstream/centos-binary-neutron-l3-agent:latest            "kolla_start"            About an hour ago   Up About an hour                        neutron_l3_agent
+320b74f360f0        tripleoupstream/centos-binary-swift-object:latest                "kolla_start"            About an hour ago   Up About an hour                        swift_object_replicator
+d76a82b49ade        tripleoupstream/centos-binary-swift-container:latest             "kolla_start"            About an hour ago   Up About an hour                        swift_container_server
+c559da3e10b3        tripleoupstream/centos-binary-swift-account:latest               "kolla_start"            About an hour ago   Up About an hour                        swift_account_server
+f66859eb6c1b        tripleoupstream/centos-binary-heat-engine:latest                 "kolla_start"            About an hour ago   Up About an hour                        heat_engine
+c391baeb8cee        tripleoupstream/centos-binary-swift-object:latest                "kolla_start"            About an hour ago   Up About an hour                        swift_object_server
+77052a32f7ee        tripleoupstream/centos-binary-nova-scheduler:latest              "kolla_start"            About an hour ago   Up About an hour                        nova_scheduler
+b0ddcedca5ae        tripleoupstream/centos-binary-swift-object:latest                "kolla_start"            About an hour ago   Up About an hour                        swift_rsync
+b3d0b7060022        tripleoupstream/centos-binary-swift-container:latest             "kolla_start"            About an hour ago   Up About an hour                        swift_container_updater
+9901211b7eb6        tripleoupstream/centos-binary-iscsid:latest                      "kolla_start"            2 hours ago         Up 2 hours                              iscsid
+af4466071f7b        tripleoupstream/centos-binary-keystone:latest                    "kolla_start"            2 hours ago         Up 2 hours                              keystone
+1845c7a63f78        tripleoupstream/centos-binary-nova-placement-api:latest          "kolla_start"            2 hours ago         Up 2 hours                              nova_placement
+b8494c4f9a3f        tripleoupstream/centos-binary-horizon:latest                     "kolla_start"            2 hours ago         Up 2 hours                              horizon
+df0969c4750e        tripleoupstream/centos-binary-mariadb:latest                     "kolla_start"            2 hours ago         Up 2 hours                              mysql
+5d9ef6874dca        tripleoupstream/centos-binary-mongodb:latest                     "kolla_start"            2 hours ago         Up 2 hours                              mongodb
+5f9de66fa07c        docker.io/ceph/daemon:tag-build-master-jewel-centos-7            "/entrypoint.sh"         2 hours ago         Up 2 hours                              ceph-mon-overcloud-controller-0
+
+ --------- ceph -s --------- 
+192.168.24.8 | SUCCESS | rc=0 >>
+    cluster cf4a808c-69a9-11e7-aa17-008aa6174646
+     health HEALTH_WARN
+            224 pgs stuck unclean
+     monmap e1: 1 mons at {overcloud-controller-0=192.168.24.8:6789/0}
+            election epoch 3, quorum 0 overcloud-controller-0
+     osdmap e23: 6 osds: 6 up, 6 in; 224 remapped pgs
+            flags sortbitwise,require_jewel_osds
+      pgmap v42: 224 pgs, 6 pools, 0 bytes data, 0 objects
+            202 MB used, 4379 MB / 4581 MB avail
+                 224 active+remapped
+
+ --------- ceph df --------- 
+192.168.24.8 | SUCCESS | rc=0 >>
+GLOBAL:
+    SIZE      AVAIL     RAW USED     %RAW USED 
+    4581M     4379M         202M          4.42 
+POOLS:
+    NAME        ID     USED     %USED     MAX AVAIL     OBJECTS 
+    rbd         0         0         0         4377M           0 
+    volumes     1         0         0         4377M           0 
+    backups     2         0         0         4377M           0 
+    vms         3         0         0         4377M           0 
+    images      4         0         0         4377M           0 
+    metrics     5         0         0         4377M           0 
+
+ --------- ceph auth list --------- 
+192.168.24.8 | SUCCESS | rc=0 >>
+osd.0
+	key: AQAgiWpZWnGHMhAAd9N04PyhZFQqhhUr9rEIUg==
+	caps: [mon] allow profile osd
+	caps: [osd] allow *
+osd.1
+	key: AQAgiWpZLV3ZMhAAiO3FIZWr4RO3zcHDj8HzIg==
+	caps: [mon] allow profile osd
+	caps: [osd] allow *
+osd.2
+	key: AQAgiWpZeJpEMhAAcNtJrIg9NeWAddUfOWxoRw==
+	caps: [mon] allow profile osd
+	caps: [osd] allow *
+osd.3
+	key: AQAsiWpZo6xGMhAA0It6Y1LEl/xpRYpPTUOkgA==
+	caps: [mon] allow profile osd
+	caps: [osd] allow *
+osd.4
+	key: AQAtiWpZ3yaZMxAAl4EXqbYy0Am+OjC2x+oyDA==
+	caps: [mon] allow profile osd
+	caps: [osd] allow *
+osd.5
+	key: AQAtiWpZREXqNBAAMfgTdZkLmydQOCRNYQiUkQ==
+	caps: [mon] allow profile osd
+	caps: [osd] allow *
+client.admin
+	key: AQC/iGpZzUd0HhAA03FnUXtT5X0EGxlKluIL1w==
+	auid: 0
+	caps: [mds] allow
+	caps: [mon] allow *
+	caps: [osd] allow *
+client.bootstrap-mds
+	key: AQDEiGpZEt8yJBAAQfnrv1Jd6maUnpK13hgqjQ==
+	caps: [mon] allow profile bootstrap-mds
+client.bootstrap-osd
+	key: AQDEiGpZ78BIIhAA1OWLqIJyxhc1JoFbFF5W+A==
+	caps: [mon] allow profile bootstrap-osd
+client.bootstrap-rgw
+	key: AQDEiGpZ8agcJhAAeb7n1XtKzayTXgt8x/MCCw==
+	caps: [mon] allow profile bootstrap-rgw
+client.openstack
+	key: AQDSkWpZAAAAABAAdmvRow9X286L0VnNZg3Jpg==
+	caps: [mds] 
+	caps: [mon] allow r
+	caps: [osd] allow class-read object_prefix rbd_children, allow rwx pool=volumes, allow rwx pool=backups, allow rwx pool=vms, allow rwx pool=images, allow rwx pool=metricsinstalled auth entries:
+
+(undercloud) [stack@undercloud tripleo-ceph-ansible]$ 
+
