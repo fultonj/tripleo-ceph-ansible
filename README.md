@@ -12,7 +12,7 @@ Try Early Version
 -----------------
 
 - Install [TripleO Quickstart](https://github.com/openstack/tripleo-quickstart) (I use [myconfigfile.yml](https://github.com/fultonj/oooq/blob/master/myconfigfile.yml))
-- Run [setup-deploy-artifacts.sh](https://github.com/fultonj/oooq/blob/master/setup-deploy-artifacts.sh) (prepare env for developerment of THT and tripleo-common)
+- Run [setup-deploy-artifacts.sh](https://github.com/fultonj/oooq/blob/master/setup-deploy-artifacts.sh) (prepare env for development of THT and tripleo-common)
 - Clone this repository into the stack user's home directory and `cd tripleo-ceph-ansible`
 - Run [init.sh](init.sh) (set DNS, ironic tagging, install ceph-ansible RPM and unmerged changes)
 - Run [deploy.sh](deploy.sh)
