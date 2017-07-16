@@ -21,7 +21,7 @@ parameter_defaults:
     ceph::profile::params::osd_max_backfills: 1
     ceph::profile::params::osd_recovery_op_priority: 2
   CephStorageExtraConfig:
-    ceph::profile::params::osd_journal_size: 512
+    ceph::profile::params::osd_journal_size: 256
     ceph::profile::params::osds:
       '/dev/vdb':
         journal: '/dev/vdd'
