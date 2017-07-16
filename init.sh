@@ -60,15 +60,7 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 	bash install-ceph-ansible.sh
     fi
     echo "Applying https://github.com/ceph/ceph-ansible/pull/1682/commits"
-    from="https://raw.githubusercontent.com/gfidente/ceph-ansible/7346f40d26348fec12e09e7cec52399dea3d80cc"
-    to="/usr/share/ceph-ansible"
-
-    for f in roles/ceph-mon/tasks/openstack_config.yml roles/ceph-mon/defaults/main.yml group_vars/mons.yml.sample; do
-	curl $from/$f > foo 
-	diff -u foo $to/$f
-	sudo mv -v foo $to/$f
-    done
-
+    sudo mv -v openstack_config.yml /usr/share/ceph-ansible/roles/ceph-mon/tasks/openstack_config.yml
 
     # Clients won't work until ceph-ansible is fixed:
     #   https://review.openstack.org/#/c/482500 
