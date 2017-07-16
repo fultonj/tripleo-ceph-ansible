@@ -2,7 +2,7 @@
 # Filename:                ansible-inventory.sh
 # Description:             Builds an Ansible Inventory
 # Supported Langauge(s):   GNU Bash 4.2.x
-# Time-stamp:              <2017-07-16 15:47:14 jfulton> 
+# Time-stamp:              <2017-07-16 17:48:54 jfulton> 
 # -------------------------------------------------------
 echo "(re)building ansbile inventory"
 source ~/stackrc
@@ -18,6 +18,8 @@ sudo sh -c "echo \"\" >> /etc/ansible/hosts"
 sudo sh -c "echo \"[osds]\" >> /etc/ansible/hosts"
 sudo sh -c "cat /tmp/cephstorage_ips >> /etc/ansible/hosts"
 sudo sh -c "echo \"\" >> /etc/ansible/hosts"
+
+sudo sed -i -e s/\#host_key_checking\ =\ False/host_key_checking=False/g /etc/ansible/ansible.cfg
 
 ansible mons -m ping
 ansible osds -m ping
