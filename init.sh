@@ -59,18 +59,30 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     else
 	bash install-ceph-ansible.sh
     fi
-    echo "Applying https://github.com/ceph/ceph-ansible/pull/1682/commits"
-    sudo mv -v openstack_config.yml /usr/share/ceph-ansible/roles/ceph-mon/tasks/openstack_config.yml
-
-    # Clients won't work until ceph-ansible is fixed:
-    #   https://review.openstack.org/#/c/482500 
-    #   https://bugzilla.redhat.com/show_bug.cgi?id=1469426 
-    #   https://bugzilla.redhat.com/show_bug.cgi?id=1471152
-    # 
-    # echo "Adding manual update to site-docker.yml.sample"
-    # echo "See https://github.com/ceph/ceph-ansible/commit/108503da961e78d28c45ee4c8fd1ea71b70abf27"
-    # curl https://raw.githubusercontent.com/ceph/ceph-ansible/108503da961e78d28c45ee4c8fd1ea71b70abf27/site-docker.yml.sample > /tmp/site-docker.yml.sample
-    # sudo mv /tmp/site-docker.yml.sample /usr/share/ceph-ansible/site-docker.yml.sample
+    # ----------------------------------
+    # MANUL ceph-ansible updates until the changes merge into master
+    echo "Fixing https://github.com/ceph/ceph-ansible/issues/1680"
+    from="https://raw.githubusercontent.com/ceph/ceph-ansible/d4f07108b8a6532149fc23e044b19dbd09818aaa"
+    to="/usr/share/ceph-ansible"
+    for f in roles/ceph-client/defaults/main.yml roles/ceph-mon/tasks/openstack_config.yml roles/ceph-mon/defaults/main.yml roles/ceph-client/tasks/create_users_keys.yml; do
+	curl $from/$f > foo 
+	diff -u foo $to/$f
+	sudo mv -v foo $to/$f
+    done
+    # ----------------------------------
+    echo "Fixing https://github.com/ceph/ceph-ansible/issues/1683"
+    from="https://raw.githubusercontent.com/ceph/ceph-ansible/a515620be59153f98fc7f13c542def61486b90fb"
+    to="/usr/share/ceph-ansible"
+    for f in roles/ceph-docker-common/tasks/fetch_configs.yml roles/ceph-mon/tasks/docker/copy_configs.yml roles/ceph-mon/tasks/docker/main.yml roles/ceph-nfs/tasks/docker/copy_configs.yml roles/ceph-rgw/tasks/docker/copy_configs.yml; do
+	curl $from/$f > foo 
+	diff -u foo $to/$f
+	sudo mv -v foo $to/$f
+    done
+    # ----------------------------------
+    echo "Adding manual update to site-docker.yml.sample"
+    echo "See https://github.com/ceph/ceph-ansible/commit/108503da961e78d28c45ee4c8fd1ea71b70abf27"
+    curl https://raw.githubusercontent.com/ceph/ceph-ansible/108503da961e78d28c45ee4c8fd1ea71b70abf27/site-docker.yml.sample > /tmp/site-docker.yml.sample
+    sudo mv /tmp/site-docker.yml.sample /usr/share/ceph-ansible/site-docker.yml.sample
 fi
 
 if [ $THT -eq 1 ]; then
