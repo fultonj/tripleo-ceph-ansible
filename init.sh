@@ -12,7 +12,7 @@ THT=1
 
 WORKBOOK=1
 
-OSP_CONTAINERS=1
+OSP_CONTAINERS=0
 
 source ~/stackrc
 
@@ -59,38 +59,15 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
     else
 	bash install-ceph-ansible.sh
     fi
-    # ----------------------------------
-    # MANUL ceph-ansible updates until the changes merge into master
-    echo "Fixing https://github.com/ceph/ceph-ansible/issues/1680"
-    from="https://raw.githubusercontent.com/ceph/ceph-ansible/d4f07108b8a6532149fc23e044b19dbd09818aaa"
-    to="/usr/share/ceph-ansible"
-    for f in roles/ceph-client/defaults/main.yml roles/ceph-mon/tasks/openstack_config.yml roles/ceph-mon/defaults/main.yml roles/ceph-client/tasks/create_users_keys.yml; do
-	curl $from/$f > foo 
-	diff -u foo $to/$f
-	sudo mv -v foo $to/$f
-    done
-    # ----------------------------------
-    echo "Fixing https://github.com/ceph/ceph-ansible/issues/1683"
-    from="https://raw.githubusercontent.com/ceph/ceph-ansible/a515620be59153f98fc7f13c542def61486b90fb"
-    to="/usr/share/ceph-ansible"
-    for f in roles/ceph-docker-common/tasks/fetch_configs.yml roles/ceph-mon/tasks/docker/copy_configs.yml roles/ceph-mon/tasks/docker/main.yml roles/ceph-nfs/tasks/docker/copy_configs.yml roles/ceph-rgw/tasks/docker/copy_configs.yml; do
-	curl $from/$f > foo 
-	diff -u foo $to/$f
-	sudo mv -v foo $to/$f
-    done
-    # ----------------------------------
-    echo "Adding manual update to site-docker.yml.sample"
-    echo "See https://github.com/ceph/ceph-ansible/commit/108503da961e78d28c45ee4c8fd1ea71b70abf27"
-    curl https://raw.githubusercontent.com/ceph/ceph-ansible/108503da961e78d28c45ee4c8fd1ea71b70abf27/site-docker.yml.sample > /tmp/site-docker.yml.sample
-    sudo mv /tmp/site-docker.yml.sample /usr/share/ceph-ansible/site-docker.yml.sample
 fi
 
 if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
     pushd $dir
+    git review -d 465066
     # MDS pull (developing here) brings in stacked related change 465066
-    git review -d 479426
-#    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/21 && git checkout FETCH_HEAD
+    #git review -d 479426
+    #    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/21 && git checkout FETCH_HEAD
     popd
 fi
 
@@ -110,14 +87,19 @@ if [ $WORKBOOK -eq 1 ]; then
     echo "- https://review.openstack.org/#/c/480771"
     pushd $dir
     git review -d 480771
+
+    echo "Manually apply fixes from https://review.openstack.org/#/c/485004/"
+    for f in $(echo container-images/overcloud_containers.yaml{,.j2}); do
+	grep tag-build-master-jewel-centos-7 $f ;
+	sed -i '/tag-build-master-jewel-centos-7/d' $f
+	grep tag-build-master-jewel-centos-7 $f ;
+    done
     popd
 fi
 
 
 if [ $OSP_CONTAINERS -eq 1 ]; then
-    echo "Setting up TripleO to use the pre-built images from registry on the dockerhub"
-    echo "This usually takes 18 minutes"
-    date
-    # openstack overcloud container image upload --config-file /usr/share/openstack-tripleo-common/container-images/overcloud_containers.yaml
-    time openstack overcloud container image upload --config-file ~/tripleo-common/container-images/overcloud_containers.yaml
+    # Just use templates/environments/docker-centos-tripleoupstream.yaml instead of
+    # http://lists.openstack.org/pipermail/openstack-dev/2017-July/119880.html
+    # openstack overcloud container image prepare --env-file=$HOME/containers.yaml
 fi

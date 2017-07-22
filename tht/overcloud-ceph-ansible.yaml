@@ -10,7 +10,7 @@ parameter_defaults:
   ComputeCount: 1  
   OvercloudCephStorageFlavor: ceph-storage
   CephStorageCount: 3
-  CephMdsCount: 1
+  CephMdsCount: 0
   OvercloudCephMdsFlavor: ceph-mds
   CephRgwCount: 0
   OvercloudCephMdsFlavor: ceph-rgw
