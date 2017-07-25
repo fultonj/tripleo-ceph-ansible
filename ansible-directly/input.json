@@ -1,0 +1,84 @@
+{
+  "raw_multi_journal": true,
+  "cluster_network": "192.168.24.0/24",
+  "ip_version": "ipv4",
+  "openstack_pools": [
+    {
+      "name": "volumes",
+      "pg_num": 32,
+      "rule_name": ""
+    },
+    {
+      "name": "backups",
+      "pg_num": 32,
+      "rule_name": ""
+    },
+    {
+      "name": "vms",
+      "pg_num": 32,
+      "rule_name": ""
+    },
+    {
+      "name": "images",
+      "pg_num": 32,
+      "rule_name": ""
+    },
+    {
+      "name": "metrics",
+      "pg_num": 32,
+      "rule_name": ""
+    }
+  ],
+  "ceph_origin": "distro",
+  "devices": [
+    "/dev/vdb",
+    "/dev/vdc"
+  ],
+  "ceph_stable": true,
+  "ceph_docker_registry": "docker.io",
+  "openstack_config": true,
+  "journal_size": 256,
+  "fsid": "91556a5c-6b35-11e7-aa17-008aa6174646",
+  "docker": true,
+  "ceph_docker_image": "ceph/daemon",
+  "generate_fsid": false,
+  "public_network": "192.168.24.0/24",
+  "containerized_deployment": true,
+  "ceph_docker_image_tag": "tag-build-master-jewel-centos-7",
+  "user_config": true,
+  "fetch_directory": "/tmp/file-mistral-action1Q9_L3",
+  "ceph_conf_overrides": {
+    "global": {
+      "osd_pool_default_size": 1,
+      "osd_pool_default_pg_num": 32
+    }
+  },
+  "monitor_secret": "AQDuTW1ZXVlKIxAAhzSDOSLhf0lWdsV7X4zRuQ==",
+  "journal_collocation": false,
+  "monitor_interface": "br_ex",
+  "admin_secret": "AQByUW1ZaQNIFRAAF+z/ZnhZNIcqMHLso2a1ww==",
+  "raw_journal_devices": [
+    "/dev/vdd",
+    "/dev/vdd"
+  ],
+  "keys": [
+    {
+      "key": "AQDLKW1ZAAAAABAAyAwChFFC+ketLOMDSGhrmw==",
+      "name": "client.openstack",
+      "osd_cap": "allow class-read object_prefix rbd_children, allow rwx pool=volumes, allow rwx pool=backups, allow rwx pool=vms, allow rwx pool=images, allow rwx pool=metrics",
+      "mon_cap": "allow r"
+      "acls": ["u:nova:r--", "u:cinder:r--", "u:glance:r--", "u:gnocchi:r--"]
+    }
+  ],
+  "openstack_keys": [
+    {
+      "key": "AQDLKW1ZAAAAABAAyAwChFFC+ketLOMDSGhrmw==",
+      "name": "client.openstack",
+      "osd_cap": "allow class-read object_prefix rbd_children, allow rwx pool=volumes, allow rwx pool=backups, allow rwx pool=vms, allow rwx pool=images, allow rwx pool=metrics",
+      "mon_cap": "allow r",
+      "acls": ["u:nova:r--", "u:cinder:r--", "u:glance:r--", "u:gnocchi:r--"]
+    }
+  ],
+  "pools": [],
+  "ntp_service_enabled": false
+}
