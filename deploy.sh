@@ -22,6 +22,7 @@ time openstack overcloud deploy --templates ~/templates \
 -e ~/templates/environments/ceph-ansible/ceph-ansible.yaml \
 -e ~/templates/environments/low-memory-usage.yaml \
 -e ~/templates/environments/disable-telemetry.yaml \
+-e ~/templates/environments/docker-centos-tripleoupstream.yaml \
 -e ~/tripleo-ceph-ansible/tht/overcloud-ceph-ansible.yaml
 
 # Set MDS aside for now

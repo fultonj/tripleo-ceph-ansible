@@ -20,6 +20,8 @@ if [ $OVERALL -eq 1 ]; then
     $run_on_mon "ceph df"
     echo " --------- ceph auth list --------- "
     $run_on_mon "ceph auth list"
+    echo " --------- ls -l and getfacl openstack.keyring --------- "
+    $run_on_mon "k=/etc/ceph/ceph.client.openstack.keyring; ls -l \$k; getfacl \$k"
 fi
 
 if [ $CINDER -eq 1 ]; then
@@ -27,8 +29,8 @@ if [ $CINDER -eq 1 ]; then
     $run_on_mon "rbd -p volumes ls -l"
     openstack volume list
 
-    echo "Creating 20G Cinder volume"
-    openstack volume create --size 20 test-volume
+    echo "Creating 1 GB Cinder volume"
+    openstack volume create --size 1 test-volume
     sleep 30 
 
     echo "Listing Cinder Ceph Pool and Volume List"
