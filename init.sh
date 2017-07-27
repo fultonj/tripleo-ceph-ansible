@@ -1,16 +1,16 @@
 #!/usr/bin/env bash 
 
-DNS=1
+DNS=0
 
-IRONIC=1
+IRONIC=0
 
-CEPH_ANSIBLE=1
+CEPH_ANSIBLE=0
 CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
 GIT_SSH=0
 
-THT=1
+THT=0
 
-WORKBOOK=1
+WORKBOOK=0
 
 OSP_CONTAINERS=0
 
@@ -64,7 +64,7 @@ fi
 if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
     pushd $dir
-    git review -d 465066
+    git review -d 479426
     # MDS pull (developing here) brings in stacked related change 465066
     #git review -d 479426
     #    git fetch https://git.openstack.org/openstack/tripleo-heat-templates refs/changes/66/465066/21 && git checkout FETCH_HEAD
@@ -86,7 +86,7 @@ if [ $WORKBOOK -eq 1 ]; then
     echo "Patching ~/tripleo-common with newer unmerged changes from the following:"
     echo "- https://review.openstack.org/#/c/480771"
     pushd $dir
-    git review -d 480771
+    git review -d 487650
 
     echo "Manually apply fixes from https://review.openstack.org/#/c/485004/"
     for f in $(echo container-images/overcloud_containers.yaml{,.j2}); do
