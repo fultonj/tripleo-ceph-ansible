@@ -6,9 +6,11 @@
 # -------------------------------------------------------
 echo "(re)building ansbile inventory"
 source ~/stackrc
+rm /tmp/client_ips
 rm /tmp/osd_ips
 rm /tmp/control_ips
 for ip in $(nova list | grep cephstorage | awk {'print $12'} | grep ctlplane | sed s/ctlplane=//g); do echo "$ip ansible_ssh_user=heat-admin" >> /tmp/osd_ips; done
+for ip in $(nova list | grep compute | awk {'print $12'} | grep ctlplane | sed s/ctlplane=//g); do echo "$ip ansible_ssh_user=heat-admin" >> /tmp/client_ips; done
 for ip in $(nova list | grep control | awk {'print $12'} | grep ctlplane | sed s/ctlplane=//g); do echo "$ip ansible_ssh_user=heat-admin" >> /tmp/control_ips; done
 
 sudo sh -c "cat /dev/null > /etc/ansible/hosts"
@@ -18,9 +20,13 @@ sudo sh -c "echo \"\" >> /etc/ansible/hosts"
 sudo sh -c "echo \"[osds]\" >> /etc/ansible/hosts"
 sudo sh -c "cat /tmp/osd_ips >> /etc/ansible/hosts"
 sudo sh -c "echo \"\" >> /etc/ansible/hosts"
+sudo sh -c "echo \"[clients]\" >> /etc/ansible/hosts"
+sudo sh -c "cat /tmp/client_ips >> /etc/ansible/hosts"
+sudo sh -c "echo \"\" >> /etc/ansible/hosts"
 
 ansible mons -m ping
 ansible osds -m ping
+ansible clients -m ping
 
 echo "Updating ~/.bashrc with \$mon and \$osd variables"
 if [[ ! $(grep mons ~/.bashrc) ]]; then 
