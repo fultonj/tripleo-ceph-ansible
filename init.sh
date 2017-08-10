@@ -5,8 +5,8 @@ DNS=1
 IRONIC=1
 
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
-GIT_SSH=0
+CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
+GIT_SSH=1
 
 THT=1
 
@@ -64,8 +64,10 @@ fi
 if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
     pushd $dir
-    git review -d 479426
+    git review -d 492082
+    #git review -d 479426
     popd
+    echo "Apply this manually too: https://review.openstack.org/#/c/492303/1/docker/services/ceph-ansible/ceph-base.yaml"
 fi
 
 if [ $WORKBOOK -eq 1 ]; then
