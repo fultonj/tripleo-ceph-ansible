@@ -27,6 +27,6 @@ parameter_defaults:
     journal_collocation: false
     raw_multi_journal: true
   CephPoolDefaultPgNum: 32
-  
-  #DockerNamespace: 192.168.24.1:8787/tripleoupstream
-  #DockerNamespaceIsRegistry: true
+
+  # debugging https://bugs.launchpad.net/tripleo/+bug/1709689
+  DockerPuppetDebug: true
