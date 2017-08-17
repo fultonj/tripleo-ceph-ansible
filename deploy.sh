@@ -21,7 +21,7 @@ time openstack overcloud deploy --templates ~/templates \
 -e ~/templates/environments/docker.yaml \
 -e ~/templates/environments/low-memory-usage.yaml \
 -e ~/templates/environments/disable-telemetry.yaml \
--e ~/templates/environments/docker-centos-tripleoupstream.yaml \
+-e ~/docker_registry.yaml
 -e ~/templates/environments/ceph-ansible/ceph-ansible.yaml \
 -e ~/tripleo-ceph-ansible/tht/overcloud-ceph-ansible.yaml
 
