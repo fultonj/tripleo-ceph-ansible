@@ -1,18 +1,16 @@
 #!/usr/bin/env bash 
 
 DNS=1
-
+ZAP=1
 IRONIC=1
 
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
-GIT_SSH=1
+CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
+GIT_SSH=0
 
-THT=1
-
+THT=0
 WORKBOOK=0
-
-OSP_CONTAINERS=0
+OSP_CONTAINERS=1
 
 source ~/stackrc
 
@@ -22,6 +20,26 @@ if [ $DNS -eq 1 ]; then
     openstack subnet show $SNET
     openstack subnet set $SNET --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248
     openstack subnet show $SNET
+fi
+
+if [ $ZAP -eq 1 ]; then
+    # http://blog.johnlikesopenstack.com/2017/03/ironic-metadata-disk-cleaning-instead.html
+    echo "Enabling Ironic Metadata Disk Cleaning"
+    sudo egrep "clean|erase" /etc/ironic/ironic.conf | egrep -v \#
+    sudo sed -i s/automated_clean=False/automated_clean=True/g /etc/ironic/ironic.conf
+    sudo egrep "clean|erase" /etc/ironic/ironic.conf | egrep -v \#
+    sudo systemctl restart openstack-ironic-conductor.service
+    sudo systemctl status openstack-ironic-conductor.service
+
+    echo "Cleaning Ceph Nodes for first time (this will run automatically next time)"
+    for ironic_id in $(ironic node-list | grep ceph | awk {'print $2'} | grep -v UUID | egrep -v '^$'); do
+	ironic node-set-provision-state $ironic_id manage; 
+    done 
+
+    for ironic_id in $(ironic node-list  | grep ceph | awk {'print $2'} | grep -v UUID | egrep -v '^$'); do 
+	ironic node-set-provision-state $ironic_id provide; 
+    done
+    ironic node-list
 fi
 
 if [ $IRONIC -eq 1 ]; then
@@ -98,7 +116,11 @@ fi
 
 
 if [ $OSP_CONTAINERS -eq 1 ]; then
-    # Just use templates/environments/docker-centos-tripleoupstream.yaml instead of
+    # templates/environments/docker-centos-tripleoupstream.yaml is removed
     # http://lists.openstack.org/pipermail/openstack-dev/2017-July/119880.html
     # openstack overcloud container image prepare --env-file=$HOME/containers.yaml
+    openstack overcloud container image prepare \
+	--namespace tripleoupstream \
+	--tag latest \
+	--env-file ~/docker_registry.yaml
 fi
