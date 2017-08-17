@@ -19,17 +19,15 @@ fi
 
 time openstack overcloud deploy --templates ~/templates \
 -e ~/templates/environments/docker.yaml \
--e ~/templates/environments/ceph-ansible/ceph-ansible.yaml \
 -e ~/templates/environments/low-memory-usage.yaml \
 -e ~/templates/environments/disable-telemetry.yaml \
 -e ~/templates/environments/docker-centos-tripleoupstream.yaml \
+-e ~/templates/environments/ceph-ansible/ceph-ansible.yaml \
 -e ~/tripleo-ceph-ansible/tht/overcloud-ceph-ansible.yaml
-
 
 # set mds aside for now
 #-e ~/templates/environments/ceph-ansible/ceph-mds.yaml \
 #-r ~/tripleo-ceph-ansible/tht/roles_data.yaml \
-
 
 # Had http://sprunge.us/dPaH using docker-ha with ceph-ansible
 #-e ~/templates/environments/docker-ha.yaml \
