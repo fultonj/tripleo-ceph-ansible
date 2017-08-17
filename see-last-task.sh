@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 source ~/stackrc
-WORKFLOW='tripleo.storage.v1.ceph-install'      # testing from CLI runs? 
-#WORKFLOW='tripleo.overcloud.workflowtasks.step2' # testing from Heat runs? 
+WORKFLOW='tripleo.storage.v1.ceph-install'
 UUID=$(mistral execution-list | grep $WORKFLOW | awk {'print $2'} | tail -1)
 if [ -z $UUID ]; then
     echo "Error: unable to find UUID. Exixting."
