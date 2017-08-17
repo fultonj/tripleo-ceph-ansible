@@ -10,7 +10,7 @@ fi
 
 for TASK_ID in $(mistral task-list $UUID | grep ceph_install | awk {'print $2'} | egrep -v 'ID|^$'); do
     echo $TASK_ID
-    mistral task-get $TASK_ID
+    #mistral task-get $TASK_ID
     mistral task-get-result $TASK_ID | jq . | sed -e 's/\\n/\n/g' -e 's/\\"/"/g'
 done
 
