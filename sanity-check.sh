@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 OVERALL=1
+MDS=1
 CINDER=1
 GLANCE=1
 
@@ -22,6 +23,11 @@ if [ $OVERALL -eq 1 ]; then
     $run_on_mon "ceph auth list"
     echo " --------- ls -l and getfacl openstack.keyring --------- "
     $run_on_mon "k=/etc/ceph/ceph.client.openstack.keyring; ls -l \$k; getfacl \$k"
+fi
+
+if [ $MDS -eq 1 ]; then
+    echo " --------- Ceph MDS --------- "
+    $run_on_mon "ceph mds stat ; ceph fs dump"
 fi
 
 if [ $CINDER -eq 1 ]; then
