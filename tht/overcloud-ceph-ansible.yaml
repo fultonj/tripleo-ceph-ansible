@@ -1,19 +1,12 @@
-#resource_registry:
-#  OS::TripleO::NodeUserData: first-boot-template.yaml
-
 parameter_defaults:
   #NtpServer: 10.5.26.10
-  
+  DockerPuppetDebug: false  
   OvercloudControlFlavor: control
   ControllerCount: 1
   OvercloudComputeFlavor: compute
   ComputeCount: 1  
   OvercloudCephStorageFlavor: ceph-storage
-  CephStorageCount: 1
-  # CephMdsCount: 0
-  # OvercloudCephMdsFlavor: ceph-mds
-  # CephRgwCount: 0
-  # OvercloudCephMdsFlavor: ceph-rgw
+  CephStorageCount: 3
 
   CephPoolDefaultSize: 1
   CephAnsibleDisksConfig:
@@ -28,5 +21,4 @@ parameter_defaults:
     raw_multi_journal: true
   CephPoolDefaultPgNum: 32
 
-  # debugging https://bugs.launchpad.net/tripleo/+bug/1709689
-  DockerPuppetDebug: true
+

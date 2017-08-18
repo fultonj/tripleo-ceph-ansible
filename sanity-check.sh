@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 OVERALL=1
-CINDER=0
-GLANCE=0
+CINDER=1
+GLANCE=1
 
 source /home/stack/stackrc
 
