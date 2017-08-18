@@ -4,6 +4,7 @@ OVERALL=1
 MDS=1
 CINDER=1
 GLANCE=1
+NOVA=0
 
 source /home/stack/stackrc
 
@@ -72,4 +73,21 @@ if [ $GLANCE -eq 1 ]; then
     echo "Listing Glance Ceph Pool and Image List"
     $run_on_mon "rbd -p images ls -l"
     openstack image list
+fi
+
+if [ $NOVA -eq 1 ]; then
+    DEMO_CIDR="172.16.66.0/24"
+    openstack network create private_network
+    netid=$(openstack network list | awk "/private_network/ { print \$2 }")
+    openstack subnet create --network private_network --subnet-range ${DEMO_CIDR} private_subnet
+    subid=$(openstack subnet list | awk "/private_subnet/ {print \$2}")
+    openstack router create router1
+    openstack router add subnet router1 $subid
+
+    openstack flavor create --ram 512 --disk 1 --ephemeral 0 --vcpus 1 --public m1.tiny
+    openstack keypair create demokp > ~/demokp.pem 
+    chmod 600 ~/demokp.pem
+
+    openstack server create --flavor m1.tiny --image cirros --key-name demokp inst1 --nic net-id=$netid
+    openstack server list
 fi
