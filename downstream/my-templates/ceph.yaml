@@ -1,0 +1,44 @@
+parameter_defaults:
+  CephPoolDefaultSize: 3
+  CephPoolDefaultPgNum: 64
+  # CephAnsibleExtraConfig:
+  #   ceph_conf_overrides:
+  #     global:
+  #       fsid: eb2bb192-b1c9-11e6-9205-525400330666
+  #       osd_pool_default_size: 3
+  #       osd_pool_default_min_size: 2
+  #       osd_pool_default_pg_num: 256
+  #       osd_pool_default_pgp_num: 256
+  #       osd_recovery_max_active: 3
+  #       osd_max_backfills: 1
+  #       osd_recovery_op_priority: 2
+  CephAnsibleDisksConfig:
+    journal_size: 5120
+    journal_collocation: false
+    raw_multi_journal: true
+    devices:
+      - /dev/sda
+      # - /dev/sdb
+      # - /dev/sdc
+      # - /dev/sdd
+      - /dev/sde
+      # - /dev/sdf
+      # - /dev/sdg
+      # - /dev/sdh
+      - /dev/sdi
+      # - /dev/sdj
+      # - /dev/sdk
+      # - /dev/sdl
+    raw_journal_devices:
+      - /dev/sdm
+      # - /dev/sdm
+      # - /dev/sdm
+      # - /dev/sdm
+      - /dev/sdn
+      # - /dev/sdn
+      # - /dev/sdn
+      # - /dev/sdn
+      - /dev/sdo
+      # - /dev/sdo
+      # - /dev/sdo
+      # - /dev/sdo
