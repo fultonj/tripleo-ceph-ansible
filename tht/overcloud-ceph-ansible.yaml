@@ -20,5 +20,4 @@ parameter_defaults:
     journal_collocation: false
     raw_multi_journal: true
   CephPoolDefaultPgNum: 32
-
-
+  DockerCephDaemonImage: ceph/daemon:tag-build-master-jewel-centos-7
