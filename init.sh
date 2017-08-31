@@ -84,10 +84,8 @@ fi
 if [ $THT -eq 1 ]; then
     dir=/home/stack/tripleo-heat-templates
     pushd $dir
-    git review -d 492082
-    #git review -d 479426
+    git review -d 499627
     popd
-    echo "Apply this manually too: https://review.openstack.org/#/c/492303/1/docker/services/ceph-ansible/ceph-base.yaml"
 fi
 
 if [ $WORKBOOK -eq 1 ]; then
@@ -103,16 +101,9 @@ if [ $WORKBOOK -eq 1 ]; then
 	exit 1
     fi
     echo "Patching ~/tripleo-common with newer unmerged changes from the following:"
-    echo "- https://review.openstack.org/#/c/480771"
+    echo "- https://review.openstack.org/#/c/499624/"
     pushd $dir
-    git review -d 487650
-
-    echo "Manually apply fixes from https://review.openstack.org/#/c/485004/"
-    for f in $(echo container-images/overcloud_containers.yaml{,.j2}); do
-	grep tag-build-master-jewel-centos-7 $f ;
-	sed -i '/tag-build-master-jewel-centos-7/d' $f
-	grep tag-build-master-jewel-centos-7 $f ;
-    done
+    git review -d 499624
     popd
 fi
 
