@@ -75,7 +75,9 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 	sudo mv ceph-ansible /usr/share/
 	sudo chown -R root:root /usr/share/ceph-ansible
     else
-	bash install-ceph-ansible.sh
+	# workaround (for external ceph features not yet in storage sig)
+	sudo yum install https://4.chacra.ceph.com/r/ceph-ansible/master/6ae82190188492d90052eba2a521b7ed1c48f389/centos/7/flavors/default/noarch/ceph-ansible-3.0.0-0.rc4.16.g6ae8219.el7.noarch.rpm
+	# bash install-ceph-ansible.sh
     fi
 fi
 
