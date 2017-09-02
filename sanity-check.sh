@@ -9,7 +9,7 @@ NOVA=0
 source /home/stack/stackrc
 
 # all my inventories are dynamic; this is a workaround to keep it that way
-mon=$(nova list | grep controller | awk {'print $12'} | sed s/ctlplane=//g | tail -1)
+mon=$(nova list | grep controller | awk {'print $12'} | sed s/ctlplane=//g | head -1)
 run_on_mon="ansible all -i $mon, -u heat-admin -b -m shell -a "
 
 source /home/stack/tripleo-ceph-ansible/overcloudrc

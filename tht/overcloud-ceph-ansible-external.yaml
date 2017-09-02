@@ -1,0 +1,9 @@
+parameter_defaults:
+  OvercloudControlFlavor: control
+  ControllerCount: 1
+  OvercloudComputeFlavor: compute
+  ComputeCount: 1  
+
+  CephClusterFSID: 'bddc7e56-8f09-11e7-a223-003da9b9b610'
+  CephClientKey: 'AQAmRqlZAAAAABAA9aSQ+3QOyOl4OODQbj6X8w=='
+  CephExternalMonHost: '192.168.24.14'
