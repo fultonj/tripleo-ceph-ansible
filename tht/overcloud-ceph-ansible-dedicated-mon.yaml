@@ -1,0 +1,29 @@
+parameter_defaults:
+  #NtpServer: 10.5.26.10
+  DockerPuppetDebug: false  
+  OvercloudControlFlavor: control
+  ControllerCount: 1
+  OvercloudComputeFlavor: compute
+  ComputeCount: 1
+  OvercloudCephStorageFlavor: ceph-storage
+  CephStorageCount: 3
+  OvercloudCephMonFlavor: control
+  CephMonCount: 1
+
+  DockerCephDaemonImage: ceph/daemon:tag-build-master-jewel-centos-7
+  CephPoolDefaultSize: 1
+  CephAnsibleDisksConfig:
+    devices:
+      - /dev/vdb
+      - /dev/vdc
+    raw_journal_devices:
+      - /dev/vdd
+      - /dev/vdd
+    journal_size: 256 # vdd is 1024M
+    journal_collocation: false
+    raw_multi_journal: true
+  CephPoolDefaultPgNum: 32
+  CephAnsibleExtraConfig:
+    monitor_interface: eth0
+    osd_objectstore: filestore
+    osd_scenario: non-collocated
