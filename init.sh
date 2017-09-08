@@ -5,8 +5,9 @@ IRONIC=1
 ZAP=1
 
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
-GIT_SSH=0
+CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
+GIT_SSH=1
+FACTS_HACK=1
 
 THT=0
 WORKBOOK=0
@@ -68,7 +69,6 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 	echo "Cloning ceph-ansible from github"
 	if [ $GIT_SSH -eq 1 ]; then
 	    git clone git@github.com:ceph/ceph-ansible.git 
-	    #git clone git@github.com:fultonj/ceph-ansible.git 
 	else
 	    git clone https://github.com/ceph/ceph-ansible.git
 	fi
@@ -79,6 +79,12 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 	sudo yum install https://4.chacra.ceph.com/r/ceph-ansible/master/6ae82190188492d90052eba2a521b7ed1c48f389/centos/7/flavors/default/noarch/ceph-ansible-3.0.0-0.rc4.16.g6ae8219.el7.noarch.rpm
 	# bash install-ceph-ansible.sh
     fi
+fi
+
+if [ $FACTS_HACK -eq 1 ]; then
+    # Workaround https://github.com/ceph/ceph-ansible/issues/1876
+    file=/usr/share/ceph-ansible/site-docker.yml.sample
+    sed -i s/gather_facts:\ false/gather_facts:\ true/g $file
 fi
 
 if [ $THT -eq 1 ]; then
