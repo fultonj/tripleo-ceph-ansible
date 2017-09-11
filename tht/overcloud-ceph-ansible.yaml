@@ -21,3 +21,7 @@ parameter_defaults:
     raw_multi_journal: true
   CephPoolDefaultPgNum: 32
   DockerCephDaemonImage: ceph/daemon:tag-build-master-jewel-centos-7
+  #CephAnsiblePlaybook: /usr/share/ceph-ansible/site-docker-tripleo.yml.sample
+  CephAnsibleExtraConfig:
+    osd_objectstore: filestore
+    osd_scenario: non-collocated
