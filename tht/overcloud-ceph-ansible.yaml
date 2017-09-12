@@ -11,19 +11,17 @@ parameter_defaults:
   CephPoolDefaultSize: 1
   CephPoolDefaultPgNum: 32
   DockerCephDaemonImage: ceph/daemon:tag-build-master-jewel-centos-7
-  #CephAnsiblePlaybook: /usr/share/ceph-ansible/site-docker-tripleo.yml.sample
+  CephAnsiblePlaybook: /usr/share/ceph-ansible/site-docker-tripleo.yml.sample
 
   # Scenario: journal to _separate_ disk
   CephAnsibleDisksConfig:
     devices:
       - /dev/vdb
       - /dev/vdc
-    raw_journal_devices:
+    dedicated_devices:
       - /dev/vdd
       - /dev/vdd
     journal_size: 256 # vdd is 1024M
-    journal_collocation: false
-    raw_multi_journal: true
   CephAnsibleExtraConfig:
     osd_objectstore: filestore
     osd_scenario: non-collocated
