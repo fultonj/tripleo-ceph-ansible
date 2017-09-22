@@ -11,7 +11,7 @@ parameter_defaults:
   CephPoolDefaultSize: 1
   CephPoolDefaultPgNum: 32
   DockerCephDaemonImage: ceph/daemon:tag-build-master-jewel-centos-7
-  CephAnsiblePlaybook: /usr/share/ceph-ansible/site-docker-tripleo.yml.sample
+  CephAnsiblePlaybook: /usr/share/ceph-ansible/site-docker.yml.sample
 
   # Scenario: journal to _separate_ disk
   CephAnsibleDisksConfig:
