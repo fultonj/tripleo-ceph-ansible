@@ -36,8 +36,8 @@ else
     exit 0
 fi
 
-echo -e "- Assuming you want to fix the OSD nodes that failed to prep: \n"
-ln -s /tmp/prep_ips /tmp/ips
+echo -e "- Assuming you want to fix the OSD nodes that failed last run: \n"
+ln -s /tmp/run_ips /tmp/ips
 
 echo -e "- Will attempt to clean the following nodes for re-run of ceph-disk prepare by ceph-ansible:\n"
 cat /tmp/ips
