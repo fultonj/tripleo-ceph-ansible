@@ -4,6 +4,9 @@
 
 test "$(whoami)" != 'stack' && (echo "This must be run by the stack user on the undercloud"; exit 1)
 
+# make this match your actual disks being used as OSDs and OSD journals
+# disks="/dev/vdb /dev/vdc /dev/vdd"
+disks=$(echo /dev/sd{a,b,c,d,e,f,g,h,i,j,k,l,m,n,o})
 
 echo -e "- Looking for evidence of http://tracker.ceph.com/issues/21493"
 
@@ -50,7 +53,7 @@ function run {
 
 for ip in $(cat /tmp/ips); do 
     echo "- Zapping disks on $ip"
-    run $ip "for d in \$(echo /dev/vd{b,c,d}); do sudo sgdisk -Z \$d ; sudo sgdisk -g \$d ; done"
+    run $ip "for d in $disks; do sudo sgdisk -Z \$d ; sudo sgdisk -g \$d ; done"
     echo ""
     echo "- Removing all Ceph Docker containers on $ip"
     run $ip "IMAGE=\$(sudo docker images | grep ceph  | awk {'print \$3'}) ; for c in \$(sudo docker ps --all --format \"{{.Names}}\" --filter  ancestor=\$IMAGE); do sudo docker rm \$c; done"
