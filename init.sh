@@ -1,13 +1,16 @@
-#!/usr/bin/env bash 
-
+#!/usr/bin/env bash
+# Filename:                init.sh
+# Description:             Prepare quickstart env for dev
+# Supported Langauge(s):   GNU Bash 4.x + OpenStack Pike
+# Time-stamp:              <2017-10-08 07:45:44 jfulton> 
+# -------------------------------------------------------
 DNS=1
 IRONIC=1
 ZAP=1
 
 CEPH_ANSIBLE=1
-CEPH_ANSIBLE_GITHUB=1 # try latest ceph-ansible
-GIT_SSH=1
-FACTS_HACK=1
+CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
+GIT_SSH=0
 
 THT=0
 WORKBOOK=0
@@ -24,22 +27,29 @@ if [ $DNS -eq 1 ]; then
 fi
 
 if [ $IRONIC -eq 1 ]; then
+    MDS=0
+    RGW=0
+    
     echo "Updating ironic ceph storage nodes with ceph-storage profiles"
     for i in $(seq 0 2); do 
 	ironic node-update ceph-$i replace properties/capabilities=profile:ceph-storage,boot_option:local
     done
-    # mds
-    echo "Updating ironic ceph mds node with ceph-mds profile"
-    openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 2 ceph-mds
-    openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="ceph-mds" ceph-mds
-    openstack flavor show ceph-mds
-    ironic node-update mds-0 replace properties/capabilities=profile:ceph-mds,boot_option:local
-    # rgw
-    echo "Updating ironic ceph rgw node with ceph-rgw profile"
-    openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 2 ceph-rgw
-    openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="ceph-rgw" ceph-rgw
-    openstack flavor show ceph-rgw
-    ironic node-update rgw-0 replace properties/capabilities=profile:ceph-rgw,boot_option:local
+    if [ $MDS -eq 1 ]; then
+	# mds
+	echo "Updating ironic ceph mds node with ceph-mds profile"
+	openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 2 ceph-mds
+	openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="ceph-mds" ceph-mds
+	openstack flavor show ceph-mds
+	ironic node-update mds-0 replace properties/capabilities=profile:ceph-mds,boot_option:local
+    fi
+    if [ $RGW -eq 1 ]; then    
+	# rgw
+	echo "Updating ironic ceph rgw node with ceph-rgw profile"
+	openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 2 ceph-rgw
+	openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="ceph-rgw" ceph-rgw
+	openstack flavor show ceph-rgw
+	ironic node-update rgw-0 replace properties/capabilities=profile:ceph-rgw,boot_option:local
+    fi
 fi
 
 if [ $ZAP -eq 1 ]; then
@@ -75,16 +85,8 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 	sudo mv ceph-ansible /usr/share/
 	sudo chown -R root:root /usr/share/ceph-ansible
     else
-	# workaround (for external ceph features not yet in storage sig)
-	sudo yum install https://4.chacra.ceph.com/r/ceph-ansible/master/6ae82190188492d90052eba2a521b7ed1c48f389/centos/7/flavors/default/noarch/ceph-ansible-3.0.0-0.rc4.16.g6ae8219.el7.noarch.rpm
-	# bash install-ceph-ansible.sh
+	bash install-ceph-ansible.sh
     fi
-fi
-
-if [ $FACTS_HACK -eq 1 ]; then
-    # Workaround https://github.com/ceph/ceph-ansible/issues/1876
-    file=/usr/share/ceph-ansible/site-docker.yml.sample
-    sed -i s/gather_facts:\ false/gather_facts:\ true/g $file
 fi
 
 if [ $THT -eq 1 ]; then
