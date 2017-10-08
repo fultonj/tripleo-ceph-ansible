@@ -2,7 +2,7 @@
 # Filename:                init.sh
 # Description:             Prepare quickstart env for dev
 # Supported Langauge(s):   GNU Bash 4.x + OpenStack Pike
-# Time-stamp:              <2017-10-08 07:45:44 jfulton> 
+# Time-stamp:              <2017-10-08 08:47:38 jfulton> 
 # -------------------------------------------------------
 DNS=1
 IRONIC=1
@@ -18,22 +18,59 @@ OSP_CONTAINERS=1
 
 source ~/stackrc
 
+# determine environment where hypervisor is
+RAM=$(grep MemTotal /proc/meminfo | awk {'print $2'})
+if [[ $RAM -eq 12304136 ]]; then
+    HOST="orthanc"
+else
+    HOST="lab"
+fi
+
 if [ $DNS -eq 1 ]; then
     openstack subnet list 
     SNET=$(openstack subnet list | awk '/192/ {print $2}')
     openstack subnet show $SNET
-    openstack subnet set $SNET --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248
+    if [[ "$HOST" = "lab" ]]; then
+	# internal dns servers for systems engineering lab
+	openstack subnet set $SNET --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248
+    fi
+    if [[ "$HOST" = "orthanc" ]]; then
+	# https://www.opendns.com/
+	openstack subnet set $SNET --dns-nameserver 208.67.222.123 --dns-nameserver 208.67.220.123
+    fi
     openstack subnet show $SNET
 fi
 
 if [ $IRONIC -eq 1 ]; then
-    MDS=0
-    RGW=0
+
+    if [[ "$HOST" = "orthanc" ]]; then
+	ceph_node_numbers=0
+	MDS=0
+	RGW=0
+	
+	echo "Redefine compute with smaller flavor"
+	openstack flavor delete compute
+	openstack flavor create --id auto --ram 1024 --disk 40 --vcpus 1 compute
+	openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" --property "capabilities:profile"="compute" compute
+	openstack flavor show compute
+
+	echo "Update CephStorageCount in THT"
+	layout=tht/overcloud-ceph-ansible.yaml
+	grep CephStorageCount $layout
+	sed -i -e s/CephStorageCount:\ 3/CephStorageCount:\ 1/g $layout
+	grep CephStorageCount $layout
+	
+    else
+	ceph_node_numbers=$(seq 0 2)
+	MDS=1
+	RGW=1
+    fi
     
     echo "Updating ironic ceph storage nodes with ceph-storage profiles"
-    for i in $(seq 0 2); do 
+    for i in $ceph_node_numbers; do 
 	ironic node-update ceph-$i replace properties/capabilities=profile:ceph-storage,boot_option:local
     done
+    
     if [ $MDS -eq 1 ]; then
 	# mds
 	echo "Updating ironic ceph mds node with ceph-mds profile"
