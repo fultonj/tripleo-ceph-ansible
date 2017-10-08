@@ -2,7 +2,7 @@
 # Filename:                init.sh
 # Description:             Prepare quickstart env for dev
 # Supported Langauge(s):   GNU Bash 4.x + OpenStack Pike
-# Time-stamp:              <2017-10-08 08:47:38 jfulton> 
+# Time-stamp:              <2017-10-08 13:55:38 jfulton> 
 # -------------------------------------------------------
 DNS=1
 IRONIC=1
@@ -20,8 +20,8 @@ source ~/stackrc
 
 # determine environment where hypervisor is
 RAM=$(grep MemTotal /proc/meminfo | awk {'print $2'})
-if [[ $RAM -eq 12304136 ]]; then
-    HOST="orthanc"
+if [[ $RAM == 12* ]]; then 
+    HOST="orthanc" # about 12G
 else
     HOST="lab"
 fi
@@ -32,6 +32,7 @@ if [ $DNS -eq 1 ]; then
     openstack subnet show $SNET
     if [[ "$HOST" = "lab" ]]; then
 	# internal dns servers for systems engineering lab
+	# s/set/unset to undo
 	openstack subnet set $SNET --dns-nameserver 10.19.143.247 --dns-nameserver 10.19.143.248
     fi
     if [[ "$HOST" = "orthanc" ]]; then
