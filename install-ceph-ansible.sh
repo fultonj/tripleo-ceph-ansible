@@ -8,13 +8,13 @@ URL=http://cbs.centos.org/repos
 SUF=x86_64/os
 
 # https://cbs.centos.org/koji/taginfo?tagID=737
-#VERSION=candidate
+VERSION=candidate
 
 # https://cbs.centos.org/koji/taginfo?tagID=738
 #VERSION=testing
 
 # https://cbs.centos.org/koji/taginfo?tagID=739
-VERSION=release
+#VERSION=release
 
 for repo in storage7-ceph-jewel-$VERSION storage7-ceph-common-$VERSION; do
     echo "Creating $repo.repo"
