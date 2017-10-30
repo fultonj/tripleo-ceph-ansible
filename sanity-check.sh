@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
 OVERALL=1
-MDS=1
-CINDER=1
-GLANCE=1
+MDS=0
+CINDER=0
+GLANCE=0
 NOVA=0
 
 source /home/stack/stackrc
@@ -12,16 +12,23 @@ source /home/stack/stackrc
 mon=$(nova list | grep controller | awk {'print $12'} | sed s/ctlplane=//g | head -1)
 run_on_mon="ansible all -i $mon, -u heat-admin -b -m shell -a "
 
-source /home/stack/tripleo-ceph-ansible/overcloudrc
+if [[ -e /home/stack/tripleo-ceph-ansible/overcloudrc ]]; then
+    source /home/stack/tripleo-ceph-ansible/overcloudrc
+fi
+
+if [[ -e /home/stack/osp12/overcloudrc.v3 ]]; then
+    source /home/stack/osp12/overcloudrc.v3
+fi
+
 if [ $OVERALL -eq 1 ]; then
-    echo " --------- docker ps --------- "
-    $run_on_mon "docker ps"
+    # echo " --------- docker ps --------- "
+    # $run_on_mon "docker ps"
     echo " --------- ceph -s --------- "
     $run_on_mon "ceph -s"
-    echo " --------- ceph df --------- "
-    $run_on_mon "ceph df"
-    echo " --------- ceph auth list --------- "
-    $run_on_mon "ceph auth list"
+    # echo " --------- ceph df --------- "
+    # $run_on_mon "ceph df"
+    # echo " --------- ceph auth list --------- "
+    # $run_on_mon "ceph auth list"
     echo " --------- ls -l and getfacl openstack.keyring --------- "
     $run_on_mon "k=/etc/ceph/ceph.client.openstack.keyring; ls -l \$k; getfacl \$k"
 fi
