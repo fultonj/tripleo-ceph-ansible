@@ -2,7 +2,7 @@
 # Filename:                init.sh
 # Description:             Prepare quickstart env for dev
 # Supported Langauge(s):   GNU Bash 4.x + OpenStack Pike
-# Time-stamp:              <2017-11-01 15:58:34 fultonj> 
+# Time-stamp:              <2017-11-01 16:28:10 fultonj> 
 # -------------------------------------------------------
 DNS=1
 IRONIC=1
@@ -70,15 +70,17 @@ if [ $IRONIC -eq 1 ]; then
     echo "Updating ironic ceph storage nodes with ceph-storage profiles"
     for i in $ceph_node_numbers; do 
 	ironic node-update ceph-$i replace properties/capabilities=profile:ceph-storage,boot_option:local
+    done
+
+    for id in $(openstack baremetal node list | grep ceph | awk {'print $2'}); do
 	# I told oooq to give me a ceph node so it gave me extra disks.
 	# I got /dev/vda with 50G (like other nodes) but /dev/vd{b,c,d}
 	# had 7G. So introspection reported local_gb at 7 for a small disk
 	# and the nova scheduler would think the image would not fit.
-	openstack baremetal node set ceph-$i --property local_gb=50
-    done
-    
-    for id in $(openstack baremetal node list | grep off | awk {'print $2'}); do
-	ironic node-show $id | grep local_gb;
+	#echo $id	
+	openstack baremetal node set $id --property local_gb="50"
+	openstack baremetal node set $id --property root_device='{"size": "50"}'	
+	ironic node-show $id | egrep "local_gb|50";
     done
     
     if [ $MDS -eq 1 ]; then
