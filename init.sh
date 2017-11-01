@@ -2,7 +2,7 @@
 # Filename:                init.sh
 # Description:             Prepare quickstart env for dev
 # Supported Langauge(s):   GNU Bash 4.x + OpenStack Pike
-# Time-stamp:              <2017-11-01 14:59:03 fultonj> 
+# Time-stamp:              <2017-11-01 15:58:34 fultonj> 
 # -------------------------------------------------------
 DNS=1
 IRONIC=1
@@ -63,8 +63,8 @@ if [ $IRONIC -eq 1 ]; then
 	
     else
 	ceph_node_numbers=$(seq 0 2)
-	MDS=1
-	RGW=1
+	MDS=0
+	RGW=0
     fi
     
     echo "Updating ironic ceph storage nodes with ceph-storage profiles"
@@ -75,6 +75,10 @@ if [ $IRONIC -eq 1 ]; then
 	# had 7G. So introspection reported local_gb at 7 for a small disk
 	# and the nova scheduler would think the image would not fit.
 	openstack baremetal node set ceph-$i --property local_gb=50
+    done
+    
+    for id in $(openstack baremetal node list | grep off | awk {'print $2'}); do
+	ironic node-show $id | grep local_gb;
     done
     
     if [ $MDS -eq 1 ]; then
