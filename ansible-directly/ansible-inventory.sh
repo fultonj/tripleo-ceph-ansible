@@ -2,7 +2,16 @@
 # Filename:                ansible-inventory.sh
 # Description:             Builds an Ansible Inventory
 # Supported Langauge(s):   GNU Bash 4.2.x
-# Time-stamp:              <2016-04-20 13:00:50 jfulton> 
+# Time-stamp:              <2017-11-08 15:30:09 fultonj> 
+# -------------------------------------------------------
+echo "Disabling SSH key warnings"
+if [[ ! -f ~/.ssh/config ]] ; then
+    mkdir  ~/.ssh 2> /dev/null
+    echo StrictHostKeyChecking no > ~/.ssh/config
+    chmod 0600 ~/.ssh/config
+    rm -f ~/.ssh/known_hosts 2> /dev/null
+    ln -s /dev/null ~/.ssh/known_hosts
+fi
 # -------------------------------------------------------
 echo "(re)building ansbile inventory"
 source ~/stackrc
