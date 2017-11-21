@@ -14,22 +14,18 @@ parameter_defaults:
 
   CephAnsibleDisksConfig:
     devices:
-      # r
       - /dev/vdb
       - /dev/vdc
       - /dev/vdd
       - /dev/vde
-      # s
       - /dev/vdf      
       - /dev/vdg
       - /dev/vdh
       - /dev/vdi
-      # t
       - /dev/vdj
       - /dev/vdk
       - /dev/vdl
       - /dev/vdm
-      # u      
       - /dev/vdn
       - /dev/vdo
       - /dev/vdp
