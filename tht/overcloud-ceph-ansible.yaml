@@ -7,6 +7,11 @@ parameter_defaults:
   ComputeCount: 1  
   OvercloudCephStorageFlavor: ceph-storage
   CephStorageCount: 3
+  CephAnsiblePlaybookVerbosity: 1
+
+  # CephAnsibleForks: 3
+  # CephAnsibleForksMax: 33
+  # CephAnsibleSshRetries: 7
 
   CephPoolDefaultSize: 1
   CephPoolDefaultPgNum: 32
@@ -16,26 +21,14 @@ parameter_defaults:
     devices:
       - /dev/vdb
       - /dev/vdc
-      - /dev/vdd
-      - /dev/vde
-      - /dev/vdf      
-      - /dev/vdg
-      - /dev/vdh
-      - /dev/vdi
-      - /dev/vdj
-      - /dev/vdk
-      - /dev/vdl
-      - /dev/vdm
-      - /dev/vdn
-      - /dev/vdo
-      - /dev/vdp
-      - /dev/vdq
     dedicated_devices:
-      - /dev/vdr      
-      - /dev/vds      
-      - /dev/vdt
-      - /dev/vdu
+      - /dev/vdd
     journal_size: 256 # vdd is 1024M
   CephAnsibleExtraConfig:
     osd_scenario: non-collocated
     osd_objectstore: filestore
+    osd_recovery_op_priority: 3
+    osd_recovery_max_active: 3
+    osd_max_backfills: 1
+    ceph_osd_docker_memory_limit: 3g
+    ceph_osd_docker_cpu_limit: 1
