@@ -3,20 +3,15 @@
 # Configure the following repos and install ceph-ansible:
 #  http://cbs.centos.org/repos/storage7-ceph-common-candidate/x86_64/os/
 #  http://cbs.centos.org/repos/storage7-ceph-jewel-candidate/x86_64/os/
+#  http://cbs.centos.org/repos/storage7-ceph-luminous-candidate/x86_64/os/
 
 URL=http://cbs.centos.org/repos
 SUF=x86_64/os
-
-# https://cbs.centos.org/koji/taginfo?tagID=737
-VERSION=candidate
-
-# https://cbs.centos.org/koji/taginfo?tagID=738
+#VERSION=candidate
 #VERSION=testing
+VERSION=release
 
-# https://cbs.centos.org/koji/taginfo?tagID=739
-#VERSION=release
-
-for repo in storage7-ceph-jewel-$VERSION storage7-ceph-common-$VERSION; do
+for repo in storage7-ceph-luminous-$VERSION storage7-ceph-common-$VERSION; do
     echo "Creating $repo.repo"
     sh -c "cat /dev/null > $repo.repo"
     sh -c "echo \"[$repo]\" >> $repo.repo"
