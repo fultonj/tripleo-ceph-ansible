@@ -1,0 +1,40 @@
+parameter_defaults:
+  #NtpServer: 10.5.26.10
+  DockerPuppetDebug: false
+  
+  # OvercloudControlFlavor: control
+  # ControllerCount: 0
+  # OvercloudComputeFlavor: compute
+  # ComputeCount: 0 
+  # OvercloudCephStorageFlavor: ceph-storage
+  # CephStorageCount: 0
+
+  OvercloudControllerNoCephFlavor: control
+  ControllerNoCephCount: 1
+  OvercloudHciCephAllFlavor: ceph-storage
+  HciCephAllCount: 1
+  
+  CephAnsiblePlaybookVerbosity: 1
+
+  CephAnsibleEnvironmentVariables:
+    ANSIBLE_SSH_RETRIES: '6'
+
+  CephPoolDefaultSize: 1
+  CephPoolDefaultPgNum: 32
+  CephAnsiblePlaybook: /usr/share/ceph-ansible/site-docker.yml.sample
+
+  CephAnsibleDisksConfig:
+    devices:
+      - /dev/vdb
+      - /dev/vdc
+    dedicated_devices:
+      - /dev/vdd
+    journal_size: 256 # vdd is 1024M
+  CephAnsibleExtraConfig:
+    osd_scenario: non-collocated
+    osd_objectstore: filestore
+    osd_recovery_op_priority: 3
+    osd_recovery_max_active: 3
+    osd_max_backfills: 1
+    ceph_osd_docker_memory_limit: 3g
+    ceph_osd_docker_cpu_limit: 1

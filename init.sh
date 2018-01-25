@@ -2,7 +2,7 @@
 # Filename:                init.sh
 # Description:             Prepare quickstart env for dev
 # Supported Langauge(s):   GNU Bash 4.x + OpenStack Pike
-# Time-stamp:              <2017-11-01 16:28:10 fultonj> 
+# Time-stamp:              <2018-01-25 11:17:24 fultonj> 
 # -------------------------------------------------------
 DNS=1
 IRONIC=1
@@ -12,7 +12,7 @@ CEPH_ANSIBLE=1
 CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
 GIT_SSH=0
 
-THT=0
+THT=1
 WORKBOOK=0
 OSP_CONTAINERS=1
 
@@ -139,10 +139,11 @@ if [ $CEPH_ANSIBLE -eq 1 ]; then
 fi
 
 if [ $THT -eq 1 ]; then
-    dir=/home/stack/tripleo-heat-templates
-    pushd $dir
-    git review -d 499627
-    popd
+    openstack overcloud roles generate -o ~/roles_data.yaml ControllerNoCeph HciCephAll
+    #dir=/home/stack/tripleo-heat-templates
+    #pushd $dir
+    #git review -d 499627
+    #popd
 fi
 
 if [ $WORKBOOK -eq 1 ]; then
