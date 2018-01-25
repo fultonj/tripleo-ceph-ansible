@@ -2,7 +2,7 @@
 # Filename:                init.sh
 # Description:             Prepare quickstart env for dev
 # Supported Langauge(s):   GNU Bash 4.x + OpenStack Pike
-# Time-stamp:              <2018-01-25 11:17:24 fultonj> 
+# Time-stamp:              <2018-01-25 11:58:48 fultonj> 
 # -------------------------------------------------------
 DNS=1
 IRONIC=1
@@ -10,11 +10,12 @@ ZAP=1
 
 CEPH_ANSIBLE=1
 CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
-GIT_SSH=0
+GIT_SSH=1
 
 THT=1
-WORKBOOK=0
+WORKBOOK=1
 OSP_CONTAINERS=1
+SLOW=1
 
 source ~/stackrc
 
@@ -23,6 +24,10 @@ RAM=$(grep MemTotal /proc/meminfo | awk {'print $2'})
 if [[ $RAM == 12* ]]; then 
     HOST="orthanc" # about 12G
 else
+    HOST="lab"
+fi
+# override to slow hardware from lab for now
+if [ $SLOW -eq 1 ]; then
     HOST="lab"
 fi
 
@@ -159,9 +164,9 @@ if [ $WORKBOOK -eq 1 ]; then
 	exit 1
     fi
     echo "Patching ~/tripleo-common with newer unmerged changes from the following:"
-    echo "- https://review.openstack.org/#/c/499624/"
+    echo "- https://review.openstack.org/#/c/537662/"
     pushd $dir
-    git review -d 499624
+    git review -d 537662
     popd
 fi
 
@@ -174,4 +179,12 @@ if [ $OSP_CONTAINERS -eq 1 ]; then
 	--namespace tripleoupstream \
 	--tag latest \
 	--env-file ~/docker_registry.yaml
+fi
+
+if [ $SLOW -eq 1 ]; then
+    echo "Increasing ceph-ansible ssh timeout to deal with slow hardware"
+    # https://bugs.launchpad.net/tripleo/+bug/1745108
+    crudini --get /usr/share/ceph-ansible/ansible.cfg defaults timeout
+    sudo crudini --set /usr/share/ceph-ansible/ansible.cfg defaults timeout 180
+    crudini --get /usr/share/ceph-ansible/ansible.cfg defaults timeout    
 fi
