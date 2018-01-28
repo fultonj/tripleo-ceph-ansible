@@ -2,7 +2,7 @@
 # Filename:                init.sh
 # Description:             Prepare quickstart env for dev
 # Supported Langauge(s):   GNU Bash 4.x + OpenStack Pike
-# Time-stamp:              <2018-01-25 11:58:48 fultonj> 
+# Time-stamp:              <2018-01-28 16:24:29 fultonj> 
 # -------------------------------------------------------
 DNS=1
 IRONIC=1
@@ -13,15 +13,15 @@ CEPH_ANSIBLE_GITHUB=0 # try latest ceph-ansible
 GIT_SSH=1
 
 THT=1
-WORKBOOK=1
+WORKBOOK=0
 OSP_CONTAINERS=1
-SLOW=1
+SLOW=0
 
 source ~/stackrc
 
 # determine environment where hypervisor is
 RAM=$(grep MemTotal /proc/meminfo | awk {'print $2'})
-if [[ $RAM == 12* ]]; then 
+if [[ $RAM == 13* ]]; then 
     HOST="orthanc" # about 12G
 else
     HOST="lab"
@@ -30,6 +30,7 @@ fi
 if [ $SLOW -eq 1 ]; then
     HOST="lab"
 fi
+
 
 if [ $DNS -eq 1 ]; then
     openstack subnet list 
