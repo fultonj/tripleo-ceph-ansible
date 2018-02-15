@@ -1,0 +1,47 @@
+Testing with: 3 OSDs 7 pools 128 for pg_num
+
+Adding vms
+Adding volumes
+Adding images
+Adding backup
+Adding metrics
+
+ERROR: failed to add pool: manila
+ pg_num 128 size 3 would mean 1920  total pgs, which exceeds max 1800
+ (mon_max_pg_per_osd 600  * num_in_osds 3)
+
+ERROR: failed to add pool: manila_meta
+ pg_num 128 size 3 would mean 1920  total pgs, which exceeds max 1800
+ (mon_max_pg_per_osd 600  * num_in_osds 3)
+
+Final pools are:
+
+{'backup': {'pg_num': 128, 'size': 3},
+ 'images': {'pg_num': 128, 'size': 3},
+ 'metrics': {'pg_num': 128, 'size': 3},
+ 'vms': {'pg_num': 128, 'size': 3},
+ 'volumes': {'pg_num': 128, 'size': 3}}
+
+
+
+
+
+Testing with: 5 OSDs 7 pools 128 for pg_num
+
+Adding vms
+Adding volumes
+Adding images
+Adding backup
+Adding metrics
+Adding manila
+Adding manila_meta
+
+Final pools are:
+
+{'backup': {'pg_num': 128, 'size': 3},
+ 'images': {'pg_num': 128, 'size': 3},
+ 'manila': {'pg_num': 128, 'size': 3},
+ 'manila_meta': {'pg_num': 128, 'size': 3},
+ 'metrics': {'pg_num': 128, 'size': 3},
+ 'vms': {'pg_num': 128, 'size': 3},
+ 'volumes': {'pg_num': 128, 'size': 3}}
