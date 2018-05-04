@@ -27,4 +27,6 @@ time openstack overcloud deploy --templates ~/templates \
      -e ~/docker_registry.yaml \
      -e ~/templates/environments/ceph-ansible/ceph-ansible.yaml \
      -e ~/templates/environments/ceph-ansible/ceph-mds.yaml \
-     -e ~/tripleo-ceph-ansible/tht/overrides.yaml
+     -e ~/tripleo-ceph-ansible/tht/overrides.yaml \
+     -e ~/templates/environments/disable-config-download-environment.yaml \
+     --no-config-download
