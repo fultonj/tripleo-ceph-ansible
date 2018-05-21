@@ -2,7 +2,7 @@
 # Filename:                init.sh
 # Description:             Prepare quickstart env for dev
 # Supported Langauge(s):   GNU Bash 4.x + OpenStack Pike
-# Time-stamp:              <2018-05-21 16:18:49 fultonj> 
+# Time-stamp:              <2018-05-21 16:59:18 fultonj> 
 # -------------------------------------------------------
 DNS=1
 IRONIC=1
@@ -182,6 +182,9 @@ if [ $CONTAINERS -eq 1 ]; then
 	      --output-env-file ~/docker_registry.yaml \
 	      --output-images-file overcloud_containers.yaml
     openstack overcloud container image upload --config-file overcloud_containers.yaml
+
+    sudo docker images
+    curl -s http://192.168.24.1:8787/v2/_catalog | jq "."
 fi
 
 if [ $SLOW -eq 1 ]; then
