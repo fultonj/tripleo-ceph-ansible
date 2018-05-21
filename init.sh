@@ -2,7 +2,7 @@
 # Filename:                init.sh
 # Description:             Prepare quickstart env for dev
 # Supported Langauge(s):   GNU Bash 4.x + OpenStack Pike
-# Time-stamp:              <2018-01-28 16:24:29 fultonj> 
+# Time-stamp:              <2018-05-21 16:18:49 fultonj> 
 # -------------------------------------------------------
 DNS=1
 IRONIC=1
@@ -14,7 +14,7 @@ GIT_SSH=1
 
 THT=1
 WORKBOOK=0
-OSP_CONTAINERS=1
+CONTAINERS=1
 SLOW=0
 
 source ~/stackrc
@@ -172,14 +172,16 @@ if [ $WORKBOOK -eq 1 ]; then
 fi
 
 
-if [ $OSP_CONTAINERS -eq 1 ]; then
-    # templates/environments/docker-centos-tripleoupstream.yaml is removed
-    # http://lists.openstack.org/pipermail/openstack-dev/2017-July/119880.html
-    # openstack overcloud container image prepare --env-file=$HOME/containers.yaml
+if [ $CONTAINERS -eq 1 ]; then
+    # tripleo-ceph-ansible repository is oriented to pike/queens
     openstack overcloud container image prepare \
-	--namespace tripleoupstream \
-	--tag latest \
-	--env-file ~/docker_registry.yaml
+	      --namespace docker.io/tripleoqueens \
+	      --tag current-tripleo \
+	      --tag-from-label rdo_version \
+	      --push-destination 192.168.24.1:8787 \
+	      --output-env-file ~/docker_registry.yaml \
+	      --output-images-file overcloud_containers.yaml
+    openstack overcloud container image upload --config-file overcloud_containers.yaml
 fi
 
 if [ $SLOW -eq 1 ]; then
