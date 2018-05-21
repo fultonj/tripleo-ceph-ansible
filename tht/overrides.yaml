@@ -1,5 +1,5 @@
 parameter_defaults:
-  #NtpServer: 10.5.26.10
+  NtpServer: pool.ntp.org
   DockerPuppetDebug: false
   
   # OvercloudControlFlavor: control
@@ -10,9 +10,9 @@ parameter_defaults:
   # CephStorageCount: 0
 
   OvercloudControllerNoCephFlavor: control
-  ControllerNoCephCount: 1
+  ControllerNoCephCount: 3
   OvercloudHciCephAllFlavor: ceph-storage
-  HciCephAllCount: 1
+  HciCephAllCount: 3
   
   CephAnsiblePlaybookVerbosity: 1
 
