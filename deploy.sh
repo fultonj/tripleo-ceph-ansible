@@ -2,7 +2,7 @@
 
 source ~/stackrc
 
-WORKBOOK_DEV=0 # workbook updated 
+WORKBOOK_DEV=1 # workbook updated 
 if [[ $WORKBOOK_DEV -gt 0 ]]; then
     WORKBOOK=/home/stack/tripleo-common/workbooks/ceph-ansible.yaml
     if [[ ! -e $WORKBOOK ]]; then
@@ -27,6 +27,7 @@ time openstack overcloud deploy --templates ~/templates \
      -e ~/docker_registry.yaml \
      -e ~/templates/environments/ceph-ansible/ceph-ansible.yaml \
      -e ~/templates/environments/ceph-ansible/ceph-mds.yaml \
-     -e ~/tripleo-ceph-ansible/tht/overrides.yaml \
-     -e ~/templates/environments/disable-config-download-environment.yaml \
-     --no-config-download
+     -e ~/tripleo-ceph-ansible/tht/overrides.yaml
+
+     # -e ~/templates/environments/disable-config-download-environment.yaml \
+     # --no-config-download
